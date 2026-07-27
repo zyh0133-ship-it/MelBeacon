@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>MelBeacon · 知识卡片模板</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #e8e8e8; display: flex; flex-wrap: wrap; justify-content: center; gap: 30px; padding: 40px 20px; font-family: "Microsoft YaHei","PingFang SC",sans-serif; }
+  
+  /* 卡片通用样式 */
+  .card { width: 540px; height: 540px; background: linear-gradient(160deg, #ffffff 0%, #f0f7f2 100%); border-radius: 18px; position: relative; overflow: hidden; box-shadow: 0 8px 30px rgba(0,0,0,.12); display: flex; flex-direction: column; }
+  .card-header { background: linear-gradient(135deg, #00843D 0%, #00a651 100%); color: #fff; padding: 24px 28px; display: flex; align-items: center; justify-content: space-between; }
+  .card-header .day-tag { font-size: 13px; background: rgba(255,255,255,.25); padding: 4px 14px; border-radius: 20px; letter-spacing: 1px; }
+  .card-header h2 { font-size: 22px; font-weight: 700; }
+  .card-body { flex: 1; padding: 24px 28px; display: flex; flex-direction: column; gap: 14px; overflow: hidden; }
+  .card-body .point { display: flex; align-items: flex-start; gap: 12px; }
+  .card-body .point .num { width: 28px; height: 28px; background: #00843D; color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: bold; flex-shrink: 0; }
+  .card-body .point .text { flex: 1; font-size: 15px; color: #333; line-height: 1.5; padding-top: 3px; }
+  .card-body .point .text strong { color: #00843D; }
+  .card-footer { padding: 16px 28px; border-top: 1px solid #e0e8e3; display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: #999; }
+  .card-footer .logo-area { display: flex; align-items: center; gap: 6px; font-weight: bold; color: #00843D; font-size: 13px; }
+  .card-footer .qrcode-placeholder { width: 48px; height: 48px; background: #eee; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #aaa; }
+  
+  /* 变体：横向卡片（适合产品推荐） */
+  .card.product-card .card-body { gap: 10px; }
+  .card.product-card .product-row { display: flex; align-items: center; gap: 14px; padding: 10px 0; border-bottom: 1px solid #eef3ef; }
+  .card.product-card .product-row:last-child { border-bottom: none; }
+  .card.product-card .product-rank { width: 32px; height: 32px; background: #00843D; color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: bold; flex-shrink: 0; }
+  .card.product-card .product-rank.special { background: #c8960c; }
+  .card.product-card .product-info h4 { font-size: 15px; color: #222; }
+  .card.product-card .product-info p { font-size: 12px; color: #777; margin-top: 2px; }
+  
+  /* 变体：故事卡片 */
+  .card.story-card .card-header { background: linear-gradient(135deg, #2b6cb0 0%, #4299e1 100%); }
+  .card.story-card .card-body { font-size: 14px; line-height: 1.8; color: #444; }
+  .card.story-card .member-name { font-size: 17px; color: #2b6cb0; font-weight: bold; margin-bottom: 4px; }
+  .card.story-card .member-tag { font-size: 12px; color: #999; margin-bottom: 10px; }
+  
+  /* 变体：对比卡片 */
+  .card.compare-card .compare-row { display: flex; gap: 0; margin: 10px 0; }
+  .card.compare-card .compare-side { flex: 1; padding: 16px; text-align: center; border-radius: 10px; }
+  .card.compare-card .compare-side.bad { background: #fff5f5; border: 1px solid #fecaca; }
+  .card.compare-card .compare-side.good { background: #f0fdf4; border: 1px solid #bbf7d0; }
+  .card.compare-card .compare-side h3 { font-size: 15px; margin-bottom: 8px; }
+  .card.compare-card .compare-side ul { list-style: none; font-size: 13px; }
+  .card.compare-card .compare-side li { padding: 3px 0; }
+  .card.compare-card .vs { display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: bold; color: #00843D; padding: 0 8px; }
+  
+  /* 变体：路径图卡片 */
+  .card.path-card .card-header { background: linear-gradient(135deg, #c05621 0%, #dd6b20 100%); }
+  .card.path-card .flow-steps { display: flex; align-items: center; gap: 0; padding: 10px 0; }
+  .card.path-card .flow-step { flex: 1; text-align: center; padding: 10px 6px; background: #fff; border-radius: 10px; border: 2px solid #c05621; }
+  .card.path-card .flow-step .step-num { width: 26px; height: 26px; background: #c05621; color: #fff; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 13px; font-weight: bold; margin-bottom: 6px; }
+  .card.path-card .flow-step .step-text { font-size: 12px; color: #333; line-height: 1.4; }
+  .card.path-card .flow-arrow { font-size: 22px; color: #c05621; font-weight: bold; flex-shrink: 0; padding: 0 2px; }
+
+  /* Q&A速查卡 */
+  .card.qa-card .card-body { font-size: 13px; line-height: 1.7; }
+  .card.qa-card .qa-block { background: #f0f7f4; padding: 12px 16px; border-radius: 8px; margin-bottom: 6px; }
+  .card.qa-card .qa-block .q { font-weight: bold; color: #00843D; font-size: 13px; }
+  .card.qa-card .qa-block .a { color: #555; font-size: 12px; margin-top: 3px; }
+  
+  /* 标签说明 */
+  .section-label { width: 100%; text-align: center; padding: 20px 0 4px; color: #888; font-size: 16px; font-weight: bold; }
+  
+  @media print {
+    body { background: #fff; }
+    .card { box-shadow: none; break-inside: avoid; page-break-inside: avoid; margin-bottom: 30px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ============================================================ -->
+<!-- 模块1：新人启航7天引导包 -->
+<!-- ============================================================ -->
+<div class="section-label">模块1：新人启航7天引导包 · 知识卡片</div>
+
+<!-- Day1 欢迎卡 -->
+<div class="card">
+  <div class="card-header">
+    <h2>欢迎加入美乐家</h2>
+    <span class="day-tag">Day 1</span>
+  </div>
+  <div class="card-body">
+    <div class="point"><span class="num">1</span><div class="text">美乐家1985年创立于美国<br><strong>消费者直购系统（CDM）</strong></div></div>
+    <div class="point"><span class="num">2</span><div class="text"><strong>400+款产品</strong>，涵盖四大品类</div></div>
+    <div class="point"><span class="num">3</span><div class="text">营养辅助食品 · 精油与身体保养</div></div>
+    <div class="point"><span class="num">4</span><div class="text">水贝娜美妆护肤 · 居家清洁个护</div></div>
+    <div class="point"><span class="num">★</span><div class="text"><strong>保存此群到通讯录，设为置顶</strong></div></div>
+  </div>
+  <div class="card-footer"><div class="logo-area">MELALEUCA</div><div class="qrcode-placeholder">扫一扫<br>加服务商</div></div>
+</div>
+
+<!-- Day2 会员权益 -->
+<div class="card">
+  <div class="card-header">
+    <h2>你的6大会员权益</h2>
+    <span class="day-tag">Day 2</span>
+  </div>
+  <div class="card-body">
+    <div class="point"><span class="num">1</span><div class="text"><strong>会员专属价格</strong> — 比零售价优惠30%-40%</div></div>
+    <div class="point"><span class="num">2</span><div class="text"><strong>90天满意保证</strong> — 不满意可退可换</div></div>
+    <div class="point"><span class="num">3</span><div class="text"><strong>消费回馈</strong> — 每月15号前消费享5%回馈</div></div>
+    <div class="point"><span class="num">4</span><div class="text"><strong>尊荣迎宾礼</strong> — 连续6月达标送超920元好礼</div></div>
+    <div class="point"><span class="num">5</span><div class="text"><strong>首年礼</strong> — 持续回购满一年专属奖励</div></div>
+    <div class="point"><span class="num">6</span><div class="text"><strong>会员日福利</strong> — 每月额外折扣和限量组合</div></div>
+  </div>
+  <div class="card-footer"><div class="logo-area">MELALEUCA</div><div class="qrcode-placeholder">扫一扫<br>加服务商</div></div>
+</div>
+
+<!-- Day3 5款明星产品 -->
+<div class="card product-card">
+  <div class="card-header">
+    <h2>首月必试 · 5款明星产品</h2>
+    <span class="day-tag">Day 3</span>
+  </div>
+  <div class="card-body">
+    <div class="product-row"><span class="product-rank special">★</span><div class="product-info"><h4>强效洗衣精 9X</h4><p>全球销量冠军 · 9倍浓缩 · 一瓶洗96次</p></div></div>
+    <div class="product-row"><span class="product-rank">2</span><div class="product-info"><h4>三合一去污剂</h4><p>一喷一擦全屋清洁 · 植物萃取 · 迎宾礼赠送</p></div></div>
+    <div class="product-row"><span class="product-rank">3</span><div class="product-info"><h4>舒缓滋养乳液</h4><p>含茶树精油 · 长效保湿 · 迎宾礼赠送</p></div></div>
+    <div class="product-row"><span class="product-rank">4</span><div class="product-info"><h4>多维矿物质片（基础型）</h4><p>每天一片 · 补充日常所需维生素和矿物质</p></div></div>
+    <div class="product-row"><span class="product-rank">5</span><div class="product-info"><h4>洗碗精</h4><p>超浓缩植物配方 · 一滴洗一池碗</p></div></div>
+  </div>
+  <div class="card-footer"><div class="logo-area">MELALEUCA</div><div class="qrcode-placeholder">扫一扫<br>加服务商</div></div>
+</div>
+
+<!-- Day4 下单指南 -->
+<div class="card">
+  <div class="card-header">
+    <h2>下单三步走</h2>
+    <span class="day-tag">Day 4</span>
+  </div>
+  <div class="card-body">
+    <div class="point"><span class="num">1</span><div class="text">打开「美乐家易购」小程序<br>浏览产品，加入购物车</div></div>
+    <div class="point"><span class="num">2</span><div class="text"><strong>凑满18点</strong><br>1点≈20-25元，推荐5款刚好18点</div></div>
+    <div class="point"><span class="num">3</span><div class="text">填写地址，选择支付方式<br>确认下单</div></div>
+    <div class="point"><span class="num">💡</span><div class="text"><strong>小贴士：</strong>每月15号前消费多拿5%回馈<br>设备用订单保护会员权益不断档</div></div>
+  </div>
+  <div class="card-footer"><div class="logo-area">MELALEUCA</div><div class="qrcode-placeholder">扫一扫<br>加服务商</div></div>
+</div>
+
+<!-- Day7 回顾卡 -->
+<div class="card">
+  <div class="card-header">
+    <h2>新人启航 · 7天回顾</h2>
+    <span class="day-tag">Day 7</span>
+  </div>
+  <div class="card-body">
+    <div class="point"><span class="num">D1</span><div class="text">认识了美乐家四大品类</div></div>
+    <div class="point"><span class="num">D2</span><div class="text">搞清楚了6大会员权益</div></div>
+    <div class="point"><span class="num">D3</span><div class="text">知道了5款必试明星产品</div></div>
+    <div class="point"><span class="num">D4</span><div class="text">完成了第一单（或在路上）</div></div>
+    <div class="point"><span class="num">D5</span><div class="text">有了专属的服务商</div></div>
+    <div class="point"><span class="num">D6</span><div class="text">解锁了金卡/会员日/产品体验官</div></div>
+    <div class="point"><span class="num">🏆</span><div class="text"><strong>恭喜你，已经是「入门会员」了！</strong><br>等快递 · 分享使用感受 · 关注会员日</div></div>
+  </div>
+  <div class="card-footer"><div class="logo-area">MELALEUCA</div><div class="qrcode-placeholder">扫一扫<br>加服务商</div></div>
+</div>
+
+<!-- ============================================================ -->
+<!-- 模块3：换品牌认知系列 -->
+<!-- ============================================================ -->
+<div class="section-label">模块3：换品牌认知系列 · 精选知识卡片</div>
+
+<!-- 成分解码卡 -->
+<div class="card">
+  <div class="card-header">
+    <h2>你的日用品里有什么？</h2>
+    <span class="day-tag">第1期</span>
+  </div>
+  <div class="card-body">
+    <div class="point"><span class="num">⚠</span><div class="text" style="color:#c0392b;"><strong>警惕这些成分：</strong></div></div>
+    <div class="point"><span class="num">✕</span><div class="text"><strong>SLS/SLES</strong> — 刺激性起泡剂</div></div>
+    <div class="point"><span class="num">✕</span><div class="text"><strong>Parabens</strong> — 防腐剂，部分国家已限制</div></div>
+    <div class="point"><span class="num">✕</span><div class="text"><strong>邻苯二甲酸酯</strong> — 延长香味持久性</div></div>
+    <div class="point"><span class="num">✕</span><div class="text"><strong>甲醛释放体</strong> — 作为防腐剂添加</div></div>
+    <div class="point"><span class="num">✓</span><div class="text" style="color:#00843D;"><strong>美乐家绝不含以上成分</strong><br>植物表面活性剂 · 天然精油替代人工香精</div></div>
+  </div>
+  <div class="card-footer"><div class="logo-area">MELALEUCA</div><div class="qrcode-placeholder">扫一扫<br>加服务商</div></div>
+</div>
+
+<!-- 成分表三规则 -->
+<div class="card">
+  <div class="card-header">
+    <h2>看懂成分表 · 三规则</h2>
+    <span class="day-tag">第2期</span>
+  </div>
+  <div class="card-body">
+    <div class="point"><span class="num">1</span><div class="text"><strong>排名越靠前，含量越高</strong><br>「香精」排得比有效成分还靠前？多看看</div></div>
+    <div class="point"><span class="num">2</span><div class="text"><strong>警惕「假天然」</strong><br>成分表最后几位 ≈ 几乎等于没有</div></div>
+    <div class="point"><span class="num">3</span><div class="text"><strong>不会读没关系，会「搜」就行</strong><br>很多「高级名字」就是廉价化工原料</div></div>
+    <div style="background:#e8f5e9;padding:14px;border-radius:8px;text-align:center;color:#00843D;font-size:15px;font-weight:bold;margin-top:auto;">
+      美乐家的成分表短得多<br>——因为不添加不需要的东西
+    </div>
+  </div>
+  <div class="card-footer"><div class="logo-area">MELALEUCA</div><div class="qrcode-placeholder">扫一扫<br>加服务商</div></div>
+</div>
+
+<!-- 洗衣液对比卡 -->
+<div class="card compare-card">
+  <div class="card-header">
+    <h2>洗衣液账本 · 浓缩 vs 普通</h2>
+    <span class="day-tag">第3期</span>
+  </div>
+  <div class="card-body">
+    <div class="compare-row">
+      <div class="compare-side bad">
+        <h3 style="color:#c0392b;">普通洗衣液</h3>
+        <ul>
+          <li>1L 洗 20-30次</li>
+          <li>每次约 2-3元</li>
+          <li>添加荧光增白剂</li>
+          <li>含氯漂白剂</li>
+          <li>80%是水</li>
+        </ul>
+      </div>
+      <div class="vs">VS</div>
+      <div class="compare-side good">
+        <h3 style="color:#00843D;">美乐家 9X</h3>
+        <ul>
+          <li>709ml 洗 96次</li>
+          <li>每次约 1-2元</li>
+          <li>无氯漂白 · 无甲醛</li>
+          <li>无荧光增白剂</li>
+          <li>9倍浓缩 · 更少塑料</li>
+        </ul>
+      </div>
+    </div>
+    <div style="text-align:center;color:#00843D;font-size:14px;font-weight:bold;margin-top:8px;">换品牌 = 同样价钱换更好的东西</div>
+  </div>
+  <div class="card-footer"><div class="logo-area">MELALEUCA</div><div class="qrcode-placeholder">扫一扫<br>加服务商</div></div>
+</div>
+
+<!-- 精油品质鉴别 -->
+<div class="card">
+  <div class="card-header">
+    <h2>纯质精油 · 四大标准</h2>
+    <span class="day-tag">第7期</span>
+  </div>
+  <div class="card-body">
+    <div class="point"><span class="num">1</span><div class="text"><strong>100%纯植物提取</strong> — 不含合成香料、矿物油</div></div>
+    <div class="point"><span class="num">2</span><div class="text"><strong>无稀释</strong> — 不添加基础油稀释</div></div>
+    <div class="point"><span class="num">3</span><div class="text"><strong>严格检测</strong> — 每批通过GC/MS检测</div></div>
+    <div class="point"><span class="num">4</span><div class="text"><strong>ATTIA认证</strong> — 符合澳洲茶树油协会国际标准</div></div>
+    <div style="background:#fffbea;padding:12px;border-radius:8px;font-size:13px;color:#b45309;margin-top:8px;">
+      <strong>🔍 简单鉴别法：</strong>滴一滴精油在白纸上<br>纯精油挥发后不留油渍，稀释过的留下油圈
+    </div>
+  </div>
+  <div class="card-footer"><div class="logo-area">MELALEUCA</div><div class="qrcode-placeholder">扫一扫<br>加服务商</div></div>
+</div>
+
+<!-- ============================================================ -->
+<!-- 模块4：轻事业启蒙 -->
+<!-- ============================================================ -->
+<div class="section-label">模块4：轻事业启蒙 · 知识卡片</div>
+
+<!-- 品牌故事卡 -->
+<div class="card">
+  <div class="card-header" style="background: linear-gradient(135deg, #2b6cb0 0%, #4299e1 100%);">
+    <h2>认识美乐家</h2>
+    <span class="day-tag">事业启蒙</span>
+  </div>
+  <div class="card-body">
+    <div class="point"><span class="num">1985</span><div class="text">创立于美国爱达荷州，创始人范德士</div></div>
+    <div class="point"><span class="num">CDM</span><div class="text"><strong>消费者直购系统</strong> — 工厂直达消费者，无中间商赚差价</div></div>
+    <div class="point"><span class="num">400+</span><div class="text">全球超过400款产品 · 20+国家</div></div>
+    <div class="point"><span class="num">76亿</span><div class="text">全球累计支付佣金超76亿美元</div></div>
+    <div class="point"><span class="num">28</span><div class="text">中国大陆28家健康生活馆<br>上海+南通两大生产基地</div></div>
+    <div style="text-align:center;color:#2b6cb0;font-size:14px;font-weight:bold;margin-top:6px;">不是超市 · 不是直销 · 不是电商<br>是「会员直接从工厂买好产品」</div>
+  </div>
+  <div class="card-footer"><div class="logo-area">MELALEUCA</div><div class="qrcode-placeholder">扫一扫<br>加服务商</div></div>
+</div>
+
+<!-- 会员到分享者路径 -->
+<div class="card path-card">
+  <div class="card-header">
+    <h2>从会员到分享者</h2>
+    <span class="day-tag">事业启蒙</span>
+  </div>
+  <div class="card-body">
+    <div class="flow-steps">
+      <div class="flow-step">
+        <div class="step-num">1</div>
+        <div class="step-text">自己用<br>真的用了<br>真的受益了</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">
+        <div class="step-num">2</div>
+        <div class="step-text">分享体验<br>告诉需要的<br>人好东西</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">
+        <div class="step-num">3</div>
+        <div class="step-text">朋友成为<br>会员直接向<br>美乐家购买</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">
+        <div class="step-num">4</div>
+        <div class="step-text">获得<br>感谢佣金</div>
+      </div>
+    </div>
+    <div style="background:#fff5f0;padding:12px;border-radius:8px;font-size:12px;color:#c05621;text-align:center;margin-top:8px;">
+      美乐家不保证收入，实际结果取决于个人努力和市场状况。
+    </div>
+    <div style="text-align:center;color:#c05621;font-size:14px;font-weight:bold;">
+      你不是销售员，你是一个「好物分享者」
+    </div>
+  </div>
+  <div class="card-footer"><div class="logo-area">MELALEUCA</div><div class="qrcode-placeholder">扫一扫<br>加服务商</div></div>
+</div>
+
+<!-- ============================================================ -->
+<!-- 模块5：Q&A速查卡 -->
+<!-- ============================================================ -->
+<div class="section-label">模块5：社群Q&A速查卡</div>
+
+<div class="card qa-card">
+  <div class="card-header">
+    <h2>社群Q&A · 高频回复速查</h2>
+    <span class="day-tag">工具箱</span>
+  </div>
+  <div class="card-body">
+    <div class="qa-block">
+      <div class="q">Q：XXX产品怎么样？</div>
+      <div class="a">A：这款回购率很高。[核心卖点]。有90天退换保证，试试不担心。</div>
+    </div>
+    <div class="qa-block">
+      <div class="q">Q：XXX和XXX有什么区别？</div>
+      <div class="a">A：[一句话区别]。你的情况是？我建议先试[推荐款]~</div>
+    </div>
+    <div class="qa-block">
+      <div class="q">Q：有什么效果/用多久见效？</div>
+      <div class="a">A：根据美乐家官方描述，[功效说明]。个人体验有差异，一般坚持[时间]。</div>
+    </div>
+    <div class="qa-block">
+      <div class="q">Q：为什么比XX贵？</div>
+      <div class="a">A：工厂直供，价格含高品质原料+研发+90天退换。浓缩型单次成本更划算。</div>
+    </div>
+    <div class="qa-block">
+      <div class="q">Q：想退换货</div>
+      <div class="a">A：没问题！90天不满意退换。产品和订单号发我，我来处理。</div>
+    </div>
+  </div>
+  <div class="card-footer"><div class="logo-area">MELALEUCA · 快捷回复</div><div class="qrcode-placeholder">63条<br>Q&A已入库</div></div>
+</div>
+
+</body>
+</html>
