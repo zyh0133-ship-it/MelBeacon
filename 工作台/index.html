@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MelBeacon 灯塔系统 · 工作台</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <!-- 移动端汉堡按钮（V4.2 第三阶段新增） -->
+  <button class="menu-toggle" id="menu-toggle" aria-label="切换侧边栏">☰</button>
+  <!-- 移动端遮罩层 -->
+  <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+  <div class="app-layout">
+    <!-- ========== 侧边栏 ========== -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-logo">
+        <h1>🗼 MelBeacon</h1>
+        <p>灯塔系统 · DORA STUDIO</p>
+      </div>
+      <nav class="sidebar-nav">
+        <div class="nav-group">
+          <div class="nav-group-title">开发管理</div>
+          <div id="nav-dev"></div>
+        </div>
+        <div class="nav-group">
+          <div class="nav-group-title">内容运营</div>
+          <div id="nav-ops"></div>
+        </div>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="sync-status">
+          <span class="sync-dot"></span>
+          <span>云端同步中 · 刚刚</span>
+        </div>
+        <button class="sync-btn">🔄 立即同步</button>
+      </div>
+    </aside>
+
+    <!-- ========== 主内容区 ========== -->
+    <main class="main-content">
+
+      <!-- ====== 标签页1：自媒体运营 ====== -->
+      <section id="content-tab-social" class="tab-content active">
+        <div class="page-header">
+          <h2>📱 自媒体运营</h2>
+          <p>平台优先架构 · 全域IP · 无痕迹转化</p>
+        </div>
+        <!-- 平台选择栏 -->
+        <div class="platform-bar" id="social-platform-bar"></div>
+        <!-- 子标签栏 -->
+        <div class="sub-tabs" data-tab="tab-social">
+          <div class="sub-tab" data-subtab="social-overview">账号概览</div>
+          <div class="sub-tab active" data-subtab="social-content">内容库</div>
+          <div class="sub-tab" data-subtab="social-viral">爆款内容库</div>
+          <div class="sub-tab" data-subtab="social-topics">选题库</div>
+          <div class="sub-tab" data-subtab="social-benchmark">对标账号</div>
+          <div class="sub-tab" data-subtab="social-diagnostic">数据诊断</div>
+          <div class="sub-tab" data-subtab="social-heat">赛道热度</div>
+          <div class="sub-tab" data-subtab="social-rules">平台规则</div>
+        </div>
+
+        <!-- 子内容：账号概览 -->
+        <div id="social-overview" class="sub-content scroll-container"></div>
+
+        <!-- 子内容：内容库 -->
+        <div id="social-content" class="sub-content active scroll-container">
+          <!-- 工具栏 -->
+          <div class="toolbar">
+            <div class="search-box">
+              <span class="search-icon">🔍</span>
+              <input type="text" placeholder="搜索内容标题、标签...">
+            </div>
+            <div class="toolbar-actions">
+              <div class="view-toggle">
+                <button class="active" data-view="card">🎴 卡片</button>
+                <button data-view="list">📋 列表</button>
+              </div>
+            </div>
+          </div>
+          <!-- 筛选区 -->
+          <div class="filter-area" id="social-filters"></div>
+          <!-- 快捷操作区 -->
+          <div class="quick-actions" id="social-actions"></div>
+          <!-- 卡片网格 -->
+          <div id="social-content-cards"></div>
+        </div>
+
+        <!-- 子内容：爆款内容库 -->
+        <div id="social-viral" class="sub-content scroll-container"></div>
+
+        <!-- 子内容：选题库 -->
+        <div id="social-topics" class="sub-content scroll-container"></div>
+
+        <!-- 子内容：对标账号 -->
+        <div id="social-benchmark" class="sub-content scroll-container"></div>
+
+        <!-- 子内容：数据诊断 -->
+        <div id="social-diagnostic" class="sub-content scroll-container"></div>
+
+        <!-- 子内容：赛道热度（V4.2 第三阶段新增） -->
+        <div id="social-heat" class="sub-content scroll-container"></div>
+
+        <!-- 子内容：平台规则 -->
+        <div id="social-rules" class="sub-content scroll-container"></div>
+      </section>
+
+      <!-- ====== 标签页2：社群运营 ====== -->
+      <section id="content-tab-community" class="tab-content">
+        <div class="page-header">
+          <h2>💬 社群运营</h2>
+          <p>推送日历为核心 · 社群漏斗 · L1→L2→L3 全链路</p>
+        </div>
+        <!-- 子标签栏 -->
+        <div class="sub-tabs" data-tab="tab-community">
+          <div class="sub-tab active" data-subtab="comm-calendar">推送日历 ⭐</div>
+          <div class="sub-tab" data-subtab="comm-manage">社群管理</div>
+          <div class="sub-tab" data-subtab="comm-onboarding">新人引导</div>
+          <div class="sub-tab" data-subtab="comm-follow">消费跟进</div>
+          <div class="sub-tab" data-subtab="comm-funnel">转化漏斗</div>
+          <div class="sub-tab" data-subtab="comm-arch">架构设计</div>
+        </div>
+
+        <!-- 工具栏（推送日历的快捷操作） -->
+        <div class="toolbar">
+          <div class="search-box">
+            <span class="search-icon">🔍</span>
+            <input type="text" placeholder="搜索社群、推送内容...">
+          </div>
+          <div class="toolbar-actions">
+            <button class="secondary-action-btn" onclick="App.showToast('已复制提示词到剪贴板')">🏗️ 设计社群架构</button>
+            <button class="secondary-action-btn" onclick="App.showToast('已复制提示词到剪贴板')">💬 写社群话术</button>
+            <button class="secondary-action-btn" onclick="App.showToast('已复制提示词到剪贴板')">📋 设计新训练营</button>
+            <button class="secondary-action-btn" onclick="App.showToast('已复制提示词到剪贴板')">🔄 设计转化流程</button>
+            <button class="secondary-action-btn" onclick="App.showToast('已复制提示词到剪贴板')">📊 查看转化漏斗</button>
+          </div>
+        </div>
+
+        <!-- 快捷操作主操作 -->
+        <div class="quick-actions">
+          <div class="primary-action">
+            <div class="primary-action-info">
+              <h4>📅 生成今日推送日历</h4>
+              <p>为所有社群自动生成今日推送内容，基于内容库+话术模板智能匹配</p>
+            </div>
+            <button class="primary-action-go" onclick="App.showToast('已复制推送日历生成提示词到剪贴板')">一键生成 →</button>
+          </div>
+        </div>
+
+        <!-- 子内容：推送日历 -->
+        <div id="comm-calendar" class="sub-content active scroll-container"></div>
+
+        <!-- 子内容：社群管理 -->
+        <div id="comm-manage" class="sub-content scroll-container"></div>
+
+        <!-- 子内容：新人引导 -->
+        <div id="comm-onboarding" class="sub-content scroll-container"></div>
+
+        <!-- 子内容：消费跟进 -->
+        <div id="comm-follow" class="sub-content scroll-container"></div>
+
+        <!-- 子内容：转化漏斗 -->
+        <div id="comm-funnel" class="sub-content scroll-container"></div>
+
+        <!-- 子内容：架构设计 -->
+        <div id="comm-arch" class="sub-content scroll-container"></div>
+      </section>
+
+      <!-- ====== 标签页3：课件制作 ====== -->
+      <section id="content-tab-courseware" class="tab-content">
+        <div class="page-header">
+          <h2>📚 课件制作</h2>
+          <p>课件策略与生产 · 评估→大纲→脚本→素材</p>
+        </div>
+        <div class="sub-tabs" data-tab="tab-courseware">
+          <div class="sub-tab active" data-subtab="cw-library">课件库 <span class="tab-badge">23</span></div>
+          <div class="sub-tab" data-subtab="cw-framework">培训框架 <span class="tab-badge">8</span></div>
+          <div class="sub-tab" data-subtab="cw-script">短视频脚本 <span class="tab-badge">15</span></div>
+          <div class="sub-tab" data-subtab="cw-outline">PPT大纲 <span class="tab-badge">12</span></div>
+          <div class="sub-tab" data-subtab="cw-fulltext">逐字稿 <span class="tab-badge">18</span></div>
+          <div class="sub-tab" data-subtab="cw-materials">素材库 <span class="tab-badge">156</span></div>
+        </div>
+
+        <!-- 工具栏 -->
+        <div class="toolbar">
+          <div class="search-box">
+            <span class="search-icon">🔍</span>
+            <input type="text" placeholder="搜索课件...">
+          </div>
+          <div class="toolbar-actions">
+            <div class="view-toggle">
+              <button class="active" data-view="card">🎴 卡片</button>
+              <button data-view="list">📋 列表</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 快捷操作区 -->
+        <div class="quick-actions">
+          <div class="primary-action">
+            <div class="primary-action-info">
+              <h4>📋 评估旧课件</h4>
+              <p>上传旧课件，AI自动评估质量并生成优化建议</p>
+            </div>
+            <button class="primary-action-go" onclick="App.showToast('已复制评估提示词到剪贴板')">开始评估 →</button>
+          </div>
+          <div class="secondary-actions">
+            <button class="secondary-action-btn" onclick="App.showToast('已复制提示词到剪贴板')">📐 制作PPT大纲</button>
+            <button class="secondary-action-btn" onclick="App.showToast('已复制提示词到剪贴板')">✍️ 写逐字稿</button>
+            <button class="secondary-action-btn" onclick="App.showToast('已复制提示词到剪贴板')">🎬 生成短视频脚本</button>
+          </div>
+        </div>
+
+        <!-- 子内容：课件库 -->
+        <div id="cw-library" class="sub-content active scroll-container">
+          <div class="filter-area" id="cw-filters"></div>
+          <div id="cw-library-cards"></div>
+        </div>
+
+        <!-- 子内容：培训框架 -->
+        <div id="cw-framework" class="sub-content scroll-container"></div>
+        <!-- 子内容：短视频脚本 -->
+        <div id="cw-script" class="sub-content scroll-container"></div>
+        <!-- 子内容：PPT大纲 -->
+        <div id="cw-outline" class="sub-content scroll-container"></div>
+        <!-- 子内容：逐字稿 -->
+        <div id="cw-fulltext" class="sub-content scroll-container"></div>
+        <!-- 子内容：素材库 -->
+        <div id="cw-materials" class="sub-content scroll-container"></div>
+      </section>
+
+      <!-- ====== 标签页4：线下活动 ====== -->
+      <section id="content-tab-offline" class="tab-content">
+        <div class="page-header">
+          <h2>🎪 线下活动</h2>
+          <p>沙龙讲座 · 体验馆运营 · 社区公益 · 活动复盘</p>
+        </div>
+        <div class="sub-tabs" data-tab="tab-offline">
+          <div class="sub-tab active" data-subtab="offline-calendar">活动日历 <span class="tab-badge">4</span></div>
+          <div class="sub-tab" data-subtab="offline-salon">沙龙讲座 <span class="tab-badge">12</span></div>
+          <div class="sub-tab" data-subtab="offline-exp">体验馆运营 <span class="tab-badge">1</span></div>
+          <div class="sub-tab" data-subtab="offline-community">社区公益 <span class="tab-badge">3</span></div>
+          <div class="sub-tab" data-subtab="offline-materials">物料清单 <span class="tab-badge">8</span></div>
+          <div class="sub-tab" data-subtab="offline-review">活动复盘 <span class="tab-badge">6</span></div>
+        </div>
+
+        <!-- 工具栏 -->
+        <div class="toolbar">
+          <div class="search-box">
+            <span class="search-icon">🔍</span>
+            <input type="text" placeholder="搜索活动...">
+          </div>
+          <div class="toolbar-actions">
+            <div class="view-toggle">
+              <button class="active" data-view="card">🎴 卡片</button>
+              <button data-view="list">📋 列表</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 快捷操作区 -->
+        <div class="quick-actions">
+          <div class="primary-action">
+            <div class="primary-action-info">
+              <h4>🎪 策划新活动</h4>
+              <p>选择活动类型 → AI生成完整活动方案（含流程/物料/话术）</p>
+            </div>
+            <button class="primary-action-go" onclick="App.showToast('已复制活动策划提示词到剪贴板')">开始策划 →</button>
+          </div>
+          <div class="secondary-actions">
+            <button class="secondary-action-btn" onclick="App.showToast('已复制提示词到剪贴板')">📋 生成执行SOP</button>
+            <button class="secondary-action-btn" onclick="App.showToast('已复制提示词到剪贴板')">🎤 写主持稿</button>
+            <button class="secondary-action-btn" onclick="App.showToast('已复制提示词到剪贴板')">📊 做活动复盘</button>
+          </div>
+        </div>
+
+        <!-- 子内容：活动日历 -->
+        <div id="offline-calendar" class="sub-content active scroll-container">
+          <div class="filter-area" id="offline-filters"></div>
+          <div id="offline-calendar-cards"></div>
+        </div>
+
+        <!-- 子内容：沙龙讲座 -->
+        <div id="offline-salon" class="sub-content scroll-container"></div>
+        <!-- 子内容：体验馆运营 -->
+        <div id="offline-exp" class="sub-content scroll-container"></div>
+        <!-- 子内容：社区公益 -->
+        <div id="offline-community" class="sub-content scroll-container"></div>
+        <!-- 子内容：物料清单 -->
+        <div id="offline-materials" class="sub-content scroll-container"></div>
+        <!-- 子内容：活动复盘 -->
+        <div id="offline-review" class="sub-content scroll-container"></div>
+      </section>
+
+      <!-- ====== 标签页5：经营者培训 ====== -->
+      <section id="content-tab-training" class="tab-content">
+        <div class="page-header">
+          <h2>🎓 经营者培训</h2>
+          <p>D→D3→D5→D8→SD→ED→ND→CD→PD · 46阶晋升路径</p>
+        </div>
+        <div class="sub-tabs" data-tab="tab-training">
+          <div class="sub-tab active" data-subtab="training-mine">我的培训 <span class="tab-badge">12</span></div>
+          <div class="sub-tab" data-subtab="training-exam">考核管理 <span class="tab-badge">12</span></div>
+          <div class="sub-tab" data-subtab="training-calendar">培训日历 <span class="tab-badge">4</span></div>
+          <div class="sub-tab" data-subtab="training-activity">团队活动 <span class="tab-badge">3</span></div>
+          <div class="sub-tab" data-subtab="training-courseware">课件设计 <span class="tab-badge admin-only">管理</span></div>
+        </div>
+
+        <!-- 工具栏 -->
+        <div class="toolbar">
+          <div class="search-box">
+            <span class="search-icon">🔍</span>
+            <input type="text" placeholder="搜索我的培训、课程...">
+          </div>
+          <div class="toolbar-actions">
+            <div class="view-toggle">
+              <button class="active" data-view="card">🎴 卡片</button>
+              <button data-view="list">📋 列表</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 快捷操作区（仅课件管理员/管理员可见，由Auth.applyPermissions控制显示） -->
+        <div class="quick-actions" id="training-admin-actions" data-auth-ability="canDesignCourse">
+          <div class="primary-action">
+            <div class="primary-action-info">
+              <h4>🎓 设计分级课程</h4>
+              <p>为不同阶衔的经营者设计专属培训课程与考核体系</p>
+            </div>
+            <button class="primary-action-go" onclick="App.showToast('已复制课程设计提示词到剪贴板')">开始设计 →</button>
+          </div>
+          <div class="secondary-actions">
+            <button class="secondary-action-btn" onclick="App.showToast('已复制提示词到剪贴板')">📝 出考核试卷</button>
+            <button class="secondary-action-btn" onclick="App.showToast('已复制提示词到剪贴板')">🎤 写培训讲稿</button>
+            <button class="secondary-action-btn" onclick="App.showToast('已复制提示词到剪贴板')">📐 管理培训框架</button>
+          </div>
+        </div>
+
+        <!-- 子内容：我的培训 -->
+        <div id="training-mine" class="sub-content active scroll-container">
+          <div class="filter-area" id="train-filters"></div>
+          <div id="training-mine-cards"></div>
+        </div>
+
+        <!-- 子内容：课程进度 -->
+        <div id="training-progress" class="sub-content scroll-container"></div>
+
+        <!-- 子内容：考核管理 -->
+        <div id="training-exam" class="sub-content scroll-container"></div>
+        <!-- 子内容：培训日历 -->
+        <div id="training-calendar" class="sub-content scroll-container"></div>
+        <!-- 子内容：团队活动 -->
+        <div id="training-activity" class="sub-content scroll-container"></div>
+        <!-- 子内容：课件设计（仅课件管理员/管理员可见） -->
+        <div id="training-courseware" class="sub-content scroll-container"></div>
+      </section>
+
+      <!-- ====== 标签页6：运营中枢 ====== -->
+      <section id="content-tab-hub" class="tab-content">
+        <div class="page-header">
+          <h2>🏠 运营中枢</h2>
+          <p id="hub-dashboard-subtitle">角色专属看板 · 自动化任务 · 月度复盘 · 合规中心</p>
+        </div>
+        <div class="sub-tabs" data-tab="tab-hub">
+          <div class="sub-tab active" data-subtab="hub-dashboard">角色专属看板</div>
+          <div class="sub-tab" data-subtab="hub-automation">自动化任务 <span class="tab-badge">21</span></div>
+          <div class="sub-tab" data-subtab="hub-traffic">流量分配 <span class="tab-badge">300</span></div>
+          <div class="sub-tab" data-subtab="hub-promotion">晋升追踪 <span class="tab-badge">8</span></div>
+          <div class="sub-tab" data-subtab="hub-reviews">月度复盘 <span class="tab-badge">4</span></div>
+          <div class="sub-tab" data-subtab="hub-delegation">委托管理 <span class="tab-badge">5</span></div>
+          <div class="sub-tab" data-subtab="hub-compliance">合规中心 <span class="tab-badge">2</span></div>
+          <div class="sub-tab" data-subtab="hub-knowledge">知识库 <span class="tab-badge">156</span></div>
+          <div class="sub-tab" data-subtab="hub-settings">系统设置</div>
+        </div>
+
+        <!-- 工具栏 -->
+        <div class="toolbar">
+          <div class="search-box">
+            <span class="search-icon">🔍</span>
+            <input type="text" placeholder="搜索任务、报告...">
+          </div>
+          <div class="toolbar-actions">
+            <button class="secondary-action-btn" onclick="App.showToast('已复制周报生成提示词到剪贴板')">📊 生成周报</button>
+            <button class="secondary-action-btn" onclick="App.showToast('已复制月度复盘提示词到剪贴板')">📅 月度复盘</button>
+            <button class="secondary-action-btn" onclick="App.showToast('已复制战略推演提示词到剪贴板')">🎯 战略推演</button>
+            <button class="secondary-action-btn" onclick="App.showToast('已复制合规审查提示词到剪贴板')">✅ 合规审查</button>
+          </div>
+        </div>
+
+        <!-- 子内容：角色专属看板 -->
+        <div id="hub-dashboard" class="sub-content active scroll-container"></div>
+
+        <!-- 子内容：自动化任务 -->
+        <div id="hub-automation" class="sub-content scroll-container"></div>
+
+        <!-- 子内容：流量分配 -->
+        <div id="hub-traffic" class="sub-content scroll-container"></div>
+
+        <!-- 子内容：晋升追踪（从培训模块移入） -->
+        <div id="hub-promotion" class="sub-content scroll-container"></div>
+
+        <!-- 子内容：月度复盘 -->
+        <div id="hub-reviews" class="sub-content scroll-container"></div>
+
+        <!-- 子内容：委托管理（V4.2 第二阶段新增） -->
+        <div id="hub-delegation" class="sub-content scroll-container"></div>
+
+        <!-- 子内容：合规中心 -->
+        <div id="hub-compliance" class="sub-content scroll-container"></div>
+
+        <!-- 子内容：知识库 -->
+        <div id="hub-knowledge" class="sub-content scroll-container"></div>
+
+        <!-- 子内容：系统设置 -->
+        <div id="hub-settings" class="sub-content scroll-container"></div>
+      </section>
+
+  <!-- ====== 标签页：团队管理（独立标签页，源头/SD+/管理员可见） ====== -->
+      <section id="content-tab-team" class="tab-content">
+        <div class="page-header">
+          <h2>👥 团队管理</h2>
+          <p id="team-subtitle">团队全局视图 · 市场树 · 成长追踪 · 成员管理</p>
+        </div>
+        <div class="sub-tabs" data-tab="tab-team">
+          <div class="sub-tab active" data-subtab="team-overview">团队概览</div>
+          <div class="sub-tab" data-subtab="team-members">成员管理</div>
+          <div class="sub-tab" data-subtab="team-growth">成长追踪</div>
+          <div class="sub-tab" data-subtab="team-traffic">团队流量</div>
+          <div class="sub-tab" data-subtab="team-market">市场视图</div>
+        </div>
+
+        <!-- 工具栏 -->
+        <div class="toolbar">
+          <div class="search-box">
+            <span class="search-icon">🔍</span>
+            <input type="text" placeholder="搜索团队、成员...">
+          </div>
+          <div class="toolbar-actions">
+            <button class="secondary-action-btn" id="team-btn-add-member" style="display:none">➕ 添加成员</button>
+            <button class="secondary-action-btn" id="team-btn-export" style="display:none">📥 导出报告</button>
+          </div>
+        </div>
+
+        <!-- 子内容：团队概览 -->
+        <div id="team-overview" class="sub-content active scroll-container"></div>
+
+        <!-- 子内容：成员管理 -->
+        <div id="team-members" class="sub-content scroll-container"></div>
+
+        <!-- 子内容：成长追踪 -->
+        <div id="team-growth" class="sub-content scroll-container"></div>
+
+        <!-- 子内容：团队流量 -->
+        <div id="team-traffic" class="sub-content scroll-container"></div>
+
+        <!-- 子内容：市场视图（SD+/管理员） -->
+        <div id="team-market" class="sub-content scroll-container"></div>
+      </section>
+
+  <!-- ====== 开发管理标签页 ====== -->
+
+  <!-- 标签页7：任务计划 -->
+  <section id="content-tab-tasks" class="tab-content">
+    <div class="page-header">
+      <h2>📋 任务计划</h2>
+      <p>全局任务追踪 · 甘特图 · 优先级管理</p>
+    </div>
+    <div class="sub-tabs" data-tab="tab-tasks">
+      <div class="sub-tab active" data-subtab="tasks-today">今日任务 <span class="tab-badge">12</span></div>
+      <div class="sub-tab" data-subtab="tasks-week">本周任务 <span class="tab-badge">31</span></div>
+      <div class="sub-tab" data-subtab="tasks-gantt">甘特图</div>
+    </div>
+    <div class="toolbar">
+      <div class="search-box">
+        <span class="search-icon">🔍</span>
+        <input type="text" placeholder="搜索任务...">
+      </div>
+      <div class="toolbar-actions">
+        <button class="secondary-action-btn" onclick="App.showToast('已复制任务创建提示词')">➕ 新建任务</button>
+      </div>
+    </div>
+    <div id="tasks-today" class="sub-content active scroll-container"></div>
+    <div id="tasks-week" class="sub-content scroll-container"></div>
+    <div id="tasks-gantt" class="sub-content scroll-container"></div>
+  </section>
+
+  <!-- 标签页8：Skills管理 -->
+  <section id="content-tab-skills" class="tab-content">
+    <div class="page-header">
+      <h2>🧩 Skills管理</h2>
+      <p>AI能力管理 · 技能配置 · 提示词模板</p>
+    </div>
+    <div class="sub-tabs" data-tab="tab-skills">
+      <div class="sub-tab active" data-subtab="skills-list">技能列表 <span class="tab-badge">6</span></div>
+      <div class="sub-tab" data-subtab="skills-prompts">提示词模板</div>
+      <div class="sub-tab" data-subtab="skills-config">配置管理</div>
+    </div>
+    <div class="toolbar">
+      <div class="search-box">
+        <span class="search-icon">🔍</span>
+        <input type="text" placeholder="搜索技能...">
+      </div>
+      <div class="toolbar-actions">
+        <button class="secondary-action-btn" onclick="App.showToast('已复制技能创建提示词')">➕ 新建技能</button>
+      </div>
+    </div>
+    <div id="skills-list" class="sub-content active scroll-container"></div>
+    <div id="skills-prompts" class="sub-content scroll-container"></div>
+    <div id="skills-config" class="sub-content scroll-container"></div>
+  </section>
+
+  <!-- 标签页9：品牌合作 -->
+  <section id="content-tab-brand" class="tab-content">
+    <div class="page-header">
+      <h2>🤝 品牌合作</h2>
+      <p>KOL合作 · 品牌资源 · 招商管理</p>
+    </div>
+    <div class="sub-tabs" data-tab="tab-brand">
+      <div class="sub-tab active" data-subtab="brand-kol">KOL管理</div>
+      <div class="sub-tab" data-subtab="brand-assets">品牌素材</div>
+      <div class="sub-tab" data-subtab="brand-proposal">招商合作</div>
+    </div>
+    <div class="toolbar">
+      <div class="search-box">
+        <span class="search-icon">🔍</span>
+        <input type="text" placeholder="搜索合作...">
+      </div>
+    </div>
+    <div id="brand-kol" class="sub-content active scroll-container"></div>
+    <div id="brand-assets" class="sub-content scroll-container"></div>
+    <div id="brand-proposal" class="sub-content scroll-container"></div>
+  </section>
+
+  <!-- 标签页10：后台管理 -->
+  <section id="content-tab-admin" class="tab-content">
+    <div class="page-header">
+      <h2>🛠️ 后台管理 <span class="nav-badge">ADMIN</span></h2>
+      <p>用户管理 · 权限配置 · 系统设置</p>
+    </div>
+    <div class="sub-tabs" data-tab="tab-admin">
+      <div class="sub-tab active" data-subtab="admin-users">用户管理 <span class="tab-badge">6</span></div>
+      <div class="sub-tab" data-subtab="admin-roles">权限配置</div>
+      <div class="sub-tab" data-subtab="admin-settings">系统设置</div>
+    </div>
+    <div class="toolbar">
+      <div class="search-box">
+        <span class="search-icon">🔍</span>
+        <input type="text" placeholder="搜索用户...">
+      </div>
+      <div class="toolbar-actions">
+        <button class="secondary-action-btn" onclick="App.showToast('已复制用户创建提示词')">➕ 新建用户</button>
+      </div>
+    </div>
+    <div id="admin-users" class="sub-content active scroll-container"></div>
+    <div id="admin-roles" class="sub-content scroll-container"></div>
+    <div id="admin-settings" class="sub-content scroll-container"></div>
+  </section>
+
+  <!-- ====== 标签页11：全部入口 ====== -->
+  <section id="content-tab-all" class="tab-content">
+    <div class="page-header">
+      <h2>🔗 全部入口</h2>
+      <p>所有模块快捷导航 · 一览全局</p>
+    </div>
+    <div id="all-entry-grid" class="scroll-container" style="padding: 20px 28px;"></div>
+  </section>
+
+    </main>
+  </div>
+
+  <!-- 引入脚本（auth.js必须在app.js之前加载） -->
+  <script src="js/data.js"></script>
+  <script src="js/filters.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
