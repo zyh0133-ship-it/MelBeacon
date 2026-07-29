@@ -2267,6 +2267,91 @@ body.auth-is-admin .admin-only {
     -webkit-overflow-scrolling: touch;
     flex-wrap: nowrap;
   }
+
+  /* 表格横向滚动 */
+  .follow-table,
+  table {
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* 子标签栏去掉 max-width，确保不溢出 */
+  .sub-tabs {
+    max-width: none !important;
+  }
+
+  /* 统计卡片 4 列 → 2 列（覆盖内联 style） */
+  [style*="grid-template-columns: repeat(4"],
+  [style*="grid-template-columns:repeat(4"] {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 12px !important;
+  }
+
+  /* 3 列统计卡 → 2 列 */
+  .dashboard-grid,
+  .diagnostic-summary,
+  .kb-categories {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 12px;
+  }
+
+  /* 日历头部换行，日期横向滑动 */
+  .calendar-header {
+    flex-wrap: wrap;
+    padding: 12px 18px;
+    gap: 8px;
+  }
+  .calendar-dates {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    width: 100%;
+    justify-content: flex-start;
+    gap: 6px;
+    padding-bottom: 4px;
+  }
+  .calendar-date-item {
+    flex-shrink: 0;
+  }
+
+  /* 社群指标行 4 → 2 */
+  .community-metrics-row {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px;
+  }
+
+  /* 推送时段 2 → 1 */
+  .community-push-timeline {
+    grid-template-columns: 1fr !important;
+    gap: 10px;
+  }
+
+  /* 主操作区纵向堆叠 */
+  .primary-action {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .primary-action-go {
+    width: 100%;
+    text-align: center;
+  }
+  .primary-action-platforms {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  /* 工具栏 actions 换行并展开 */
+  .toolbar-actions {
+    width: 100%;
+    margin-left: 0 !important;
+    flex-wrap: wrap;
+  }
+  .quick-actions .secondary-actions {
+    width: 100%;
+  }
 }
 
 /* 断点 B：≤768px —— 手机：单列卡片 + 更紧凑 */
@@ -2274,6 +2359,109 @@ body.auth-is-admin .admin-only {
   body {
     font-size: 13.5px;
   }
+
+  /* 漏斗适配 */
+  .funnel-section {
+    padding: 14px;
+  }
+  .funnel-stage {
+    padding: 10px 14px;
+    font-size: 12px;
+  }
+  .funnel-stage:nth-child(1) { width: 100% !important; }
+  .funnel-stage:nth-child(2) { width: 88% !important; }
+  .funnel-stage:nth-child(3) { width: 76% !important; }
+  .funnel-stage:nth-child(4) { width: 64% !important; }
+  .funnel-stage:nth-child(5) { width: 54% !important; }
+  .funnel-stage:nth-child(6) { width: 44% !important; }
+  .funnel-stage:nth-child(7) { width: 36% !important; }
+
+  /* Toast 移到底部（手机更易看见） */
+  .toast-container {
+    top: auto;
+    bottom: 24px;
+    left: 16px;
+    right: 16px;
+    flex-direction: column-reverse;
+  }
+  .toast {
+    max-width: none;
+    text-align: center;
+  }
+
+  /* 内联 2fr 1fr → 1fr */
+  [style*="grid-template-columns: 2fr 1fr"],
+  [style*="grid-template-columns:2fr 1fr"] {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+
+  /* 内联 1fr 1fr → 1fr（无 class 时） */
+  [style*="grid-template-columns: 1fr 1fr"]:not([class]) {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  /* 时间线更紧凑 */
+  .timeline-item {
+    gap: 8px;
+  }
+  .timeline-time {
+    min-width: 48px;
+    font-size: 12px;
+    padding-top: 12px;
+  }
+  .push-timeline {
+    padding: 0 14px 14px;
+  }
+
+  /* 新人引导时间线 */
+  .onboarding-item {
+    gap: 10px;
+  }
+  .onboarding-day {
+    min-width: 42px;
+    padding: 6px 4px;
+    font-size: 11px;
+  }
+
+  /* 工具栏内按钮铺满，方便手指点击 */
+  .toolbar-actions .secondary-action-btn,
+  .quick-actions .secondary-action-btn {
+    flex: 1;
+    min-width: 45%;
+    justify-content: center;
+    text-align: center;
+  }
+  .card-action-btn {
+    flex: 1;
+    min-width: 30%;
+    text-align: center;
+    justify-content: center;
+  }
+  .card-actions {
+    flex-wrap: wrap;
+  }
+
+  /* 账号统计 2 列 */
+  .account-stats {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  /* 表格字体再小一号 */
+  .follow-table th,
+  .follow-table td {
+    padding: 8px 10px;
+    font-size: 12px;
+    white-space: nowrap;
+  }
+
+  /* 爆款 meta 缩小间距 */
+  .viral-meta {
+    gap: 6px;
+    font-size: 11px;
+  }
+}
 
   /* 汉堡按钮位置微调 */
   .menu-toggle {
@@ -2460,5 +2648,586 @@ body.auth-is-admin .admin-only {
   .sub-tab {
     padding: 7px 10px !important;
     font-size: 12px !important;
+  }
+}
+
+/* ============================================================
+ * V4.5 论坛风格「网页版/手机版」切换条 + 强制模式
+ * .force-mobile  —— 不管屏幕多大，强制手机样式
+ * .force-desktop —— 不管屏幕多小，强制桌面样式
+ * .view-switcher —— 顶部悬浮切换条
+ * ============================================================ */
+
+.view-switcher {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1001;
+  background: rgba(13, 40, 24, 0.92);
+  -webkit-backdrop-filter: blur(18px) saturate(180%);
+  backdrop-filter: blur(18px) saturate(180%);
+  color: #fff;
+  padding: 6px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  transform: translateY(-100%);
+  transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
+}
+.view-switcher.show {
+  transform: translateY(0);
+}
+.view-switcher-inner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.view-switcher-label {
+  font-size: 12px;
+  color: rgba(255,255,255,0.7);
+  font-weight: 500;
+  letter-spacing: 0.3px;
+}
+.view-switcher-btns {
+  display: inline-flex;
+  background: rgba(255,255,255,0.08);
+  border-radius: 999px;
+  padding: 2px;
+  gap: 2px;
+}
+.view-switch-btn {
+  padding: 5px 10px;
+  border: none;
+  background: transparent;
+  color: rgba(255,255,255,0.75);
+  font-size: 11.5px;
+  font-weight: 500;
+  border-radius: 999px;
+  cursor: pointer;
+  font-family: var(--font-system);
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+.view-switch-btn:hover {
+  color: #fff;
+}
+.view-switch-btn.active {
+  background: var(--color-accent);
+  color: var(--color-primary);
+  font-weight: 700;
+  box-shadow: 0 1px 4px rgba(249,168,37,0.35);
+}
+.view-switcher-close {
+  width: 26px;
+  height: 26px;
+  border: none;
+  background: rgba(255,255,255,0.08);
+  color: rgba(255,255,255,0.7);
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+.view-switcher-close:hover {
+  background: rgba(255,255,255,0.15);
+  color: #fff;
+}
+
+/* 显示切换条时，给汉堡按钮下移让位 */
+.view-switcher.show ~ .menu-toggle {
+  top: 50px !important;
+}
+.view-switcher.show ~ .app-layout .main-content {
+  padding-top: 98px !important;
+}
+@media (max-width: 480px) {
+  .view-switcher.show ~ .app-layout .main-content {
+    padding-top: 88px !important;
+  }
+  .view-switcher.show ~ .menu-toggle {
+    top: 44px !important;
+  }
+}
+@media (max-width: 768px) {
+  .view-switcher-label {
+    display: none;
+  }
+  .view-switcher {
+    padding: 5px 10px;
+  }
+  .view-switch-btn {
+    padding: 5px 9px;
+    font-size: 11px;
+  }
+}
+
+/* ========== 强制手机版模式：无视视口尺寸，全套手机样式 ========== */
+body.force-mobile {
+  min-width: 0 !important;
+  width: 100% !important;
+  overflow-x: hidden;
+  font-size: 13.5px;
+}
+body.force-mobile html {
+  overflow-x: hidden;
+}
+body.force-mobile .app-layout {
+  height: auto;
+  min-height: 100vh;
+  overflow: visible;
+}
+body.force-mobile .menu-toggle {
+  display: flex;
+  top: 12px;
+  left: 12px;
+  width: 38px;
+  height: 38px;
+  font-size: 18px;
+  background: rgba(13,40,24,0.85);
+  -webkit-backdrop-filter: blur(14px) saturate(180%);
+  backdrop-filter: blur(14px) saturate(180%);
+}
+body.force-mobile .sidebar {
+  position: fixed !important;
+  top: 0; left: 0; bottom: 0;
+  width: 280px !important;
+  min-width: 0 !important;
+  z-index: 999;
+  transform: translateX(-100%);
+  transition: transform 0.28s cubic-bezier(0.4,0,0.2,1);
+  box-shadow: 4px 0 24px rgba(0,0,0,0.22);
+  -webkit-overflow-scrolling: touch;
+}
+body.force-mobile .sidebar.open {
+  transform: translateX(0);
+}
+body.force-mobile .sidebar-overlay {
+  display: none;
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.45);
+  z-index: 998;
+}
+body.force-mobile .sidebar-overlay.show {
+  display: block;
+  opacity: 1;
+}
+body.force-mobile .main-content {
+  width: 100% !important;
+  max-width: 100% !important;
+  padding-top: 54px;
+  overflow: visible;
+}
+body.force-mobile .page-header,
+body.force-mobile .platform-bar,
+body.force-mobile .toolbar,
+body.force-mobile .content-area,
+body.force-mobile .scroll-container {
+  padding-left: 14px !important;
+  padding-right: 14px !important;
+}
+body.force-mobile .page-header {
+  padding: 12px 14px 10px !important;
+}
+body.force-mobile .page-header h2 {
+  font-size: 17px;
+  line-height: 1.3;
+}
+body.force-mobile .page-header p {
+  font-size: 11.5px;
+  margin-top: 2px;
+}
+body.force-mobile .platform-bar {
+  padding-top: 10px !important;
+  padding-bottom: 10px !important;
+  gap: 6px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  flex-wrap: nowrap;
+}
+body.force-mobile .toolbar {
+  padding-top: 10px !important;
+  padding-bottom: 10px !important;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+body.force-mobile .sub-tabs {
+  margin-left: 14px !important;
+  margin-right: 14px !important;
+  margin-top: 10px !important;
+  padding: 3px !important;
+  gap: 1px !important;
+  max-width: none !important;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+body.force-mobile .sub-tab {
+  padding: 8px 11px !important;
+  font-size: 12.5px !important;
+}
+body.force-mobile .card-grid,
+body.force-mobile .all-entry-grid {
+  grid-template-columns: 1fr !important;
+  gap: 10px;
+}
+body.force-mobile .benchmark-stats,
+body.force-mobile .stats-grid-4,
+body.force-mobile .stats-grid-3,
+body.force-mobile .grid-3,
+body.force-mobile .grid-2,
+body.force-mobile .grid-2-cards,
+body.force-mobile .two-col-grid {
+  grid-template-columns: 1fr !important;
+  gap: 10px;
+}
+body.force-mobile .content-card,
+body.force-mobile .arch-card,
+body.force-mobile .rule-card,
+body.force-mobile .viral-card,
+body.force-mobile .benchmark-card {
+  padding: 12px !important;
+}
+body.force-mobile .platform-btn {
+  padding: 5px 11px;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+body.force-mobile .search-box {
+  max-width: 100%;
+}
+body.force-mobile .account-stats {
+  grid-template-columns: repeat(2, 1fr) !important;
+}
+body.force-mobile .dashboard-grid,
+body.force-mobile .diagnostic-summary,
+body.force-mobile .kb-categories {
+  grid-template-columns: repeat(2, 1fr) !important;
+  gap: 10px;
+}
+body.force-mobile .calendar-header {
+  flex-wrap: wrap;
+  padding: 12px 14px;
+  gap: 8px;
+}
+body.force-mobile .calendar-dates {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  width: 100%;
+  justify-content: flex-start;
+  gap: 6px;
+  padding-bottom: 4px;
+}
+body.force-mobile .calendar-date-item {
+  flex-shrink: 0;
+}
+body.force-mobile .community-metrics-row {
+  grid-template-columns: repeat(2, 1fr) !important;
+  gap: 8px;
+}
+body.force-mobile .community-push-timeline {
+  grid-template-columns: 1fr !important;
+  gap: 8px;
+}
+body.force-mobile .timeline-item {
+  gap: 8px;
+}
+body.force-mobile .timeline-time {
+  min-width: 48px;
+  font-size: 12px;
+  padding-top: 12px;
+}
+body.force-mobile .push-timeline {
+  padding: 0 14px 14px;
+}
+body.force-mobile .follow-table {
+  display: block;
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  white-space: nowrap;
+  font-size: 12px;
+}
+body.force-mobile .follow-table th,
+body.force-mobile .follow-table td {
+  padding: 8px 10px;
+  font-size: 12px;
+}
+body.force-mobile .funnel-section {
+  padding: 14px;
+}
+body.force-mobile .funnel-stage {
+  padding: 10px 14px;
+  font-size: 12px;
+}
+body.force-mobile .funnel-stage:nth-child(1) { width: 100%; }
+body.force-mobile .funnel-stage:nth-child(2) { width: 88%; }
+body.force-mobile .funnel-stage:nth-child(3) { width: 76%; }
+body.force-mobile .funnel-stage:nth-child(4) { width: 64%; }
+body.force-mobile .funnel-stage:nth-child(5) { width: 54%; }
+body.force-mobile .funnel-stage:nth-child(6) { width: 44%; }
+body.force-mobile .funnel-stage:nth-child(7) { width: 36%; }
+body.force-mobile .primary-action {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 14px;
+}
+body.force-mobile .primary-action-go {
+  width: 100%;
+  text-align: center;
+}
+body.force-mobile .primary-action-platforms {
+  width: 100%;
+  flex-wrap: wrap;
+}
+body.force-mobile .toolbar-actions {
+  width: 100%;
+  margin-left: 0 !important;
+  flex-wrap: wrap;
+}
+body.force-mobile .toolbar-actions .secondary-action-btn {
+  flex: 1;
+  min-width: 45%;
+  justify-content: center;
+  text-align: center;
+}
+body.force-mobile .quick-actions .secondary-actions {
+  width: 100%;
+}
+body.force-mobile .quick-actions .secondary-action-btn {
+  flex: 1;
+  min-width: 45%;
+  justify-content: center;
+}
+body.force-mobile .onboarding-item {
+  gap: 10px;
+}
+body.force-mobile .onboarding-day {
+  min-width: 42px;
+  padding: 6px 4px;
+  font-size: 11px;
+}
+body.force-mobile .toast-container {
+  top: auto;
+  bottom: 24px;
+  left: 16px;
+  right: 16px;
+  flex-direction: column-reverse;
+}
+body.force-mobile .toast {
+  max-width: none;
+  text-align: center;
+}
+body.force-mobile .viral-meta {
+  gap: 6px;
+  font-size: 11px;
+}
+body.force-mobile .card-metrics {
+  gap: 10px;
+}
+body.force-mobile .card-actions {
+  flex-wrap: wrap;
+}
+/* V4.5：移动端 44px 最小点击区域（Apple HIG 标准） */
+body.force-mobile .card-action-btn {
+  flex: 1;
+  min-width: 30%;
+  min-height: 44px;
+  line-height: 1;
+  padding: 12px 14px;
+  font-size: 13px;
+  border-radius: 12px;
+  text-align: center;
+  justify-content: center;
+  -webkit-tap-highlight-color: transparent;
+}
+body.force-mobile .filter-tag,
+body.force-mobile .view-toggle button,
+body.force-mobile .platform-btn {
+  min-height: 40px;
+  line-height: 40px;
+  padding: 0 16px;
+  font-size: 13px;
+  border-radius: 20px;
+  -webkit-tap-highlight-color: transparent;
+}
+body.force-mobile .sub-tab-btn {
+  min-height: 40px;
+  padding: 0 16px;
+  font-size: 13px;
+  border-radius: 20px;
+  -webkit-tap-highlight-color: transparent;
+  flex-shrink: 0;
+}
+body.force-mobile .nav-item {
+  min-height: 48px;
+  border-radius: 12px;
+  padding: 0 14px;
+  font-size: 14px;
+  -webkit-tap-highlight-color: transparent;
+}
+body.force-mobile .nav-group-title {
+  min-height: 32px;
+  padding: 8px 14px;
+}
+body.force-mobile .calendar-date-item {
+  min-width: 40px;
+  min-height: 56px;
+  border-radius: 12px;
+  font-size: 13px;
+  -webkit-tap-highlight-color: transparent;
+}
+body.force-mobile .calendar-nav-btn {
+  min-width: 40px;
+  min-height: 40px;
+  border-radius: 12px;
+  font-size: 18px;
+  -webkit-tap-highlight-color: transparent;
+}
+/* 统计卡片 4 列在手机端转 2 列或 1 列（覆盖内联 style 写的 4 列） */
+body.force-mobile [style*="grid-template-columns: repeat(4"],
+body.force-mobile [style*="grid-template-columns:repeat(4"] {
+  grid-template-columns: repeat(2, 1fr) !important;
+  gap: 10px !important;
+}
+/* 赛道热度里的 trend + platform 2fr/1fr 转 1fr */
+body.force-mobile [style*="grid-template-columns: 2fr 1fr"],
+body.force-mobile [style*="grid-template-columns:2fr 1fr"] {
+  grid-template-columns: 1fr !important;
+  gap: 12px !important;
+}
+/* 优化建议 1fr 1fr 转 1fr */
+body.force-mobile [style*="grid-template-columns: 1fr 1fr"]:not([class]) {
+  grid-template-columns: 1fr !important;
+  gap: 10px !important;
+}
+/* 所有 table 元素在手机端横向滚动 */
+body.force-mobile table {
+  display: block;
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ========== 强制桌面版模式：无视视口尺寸，全套桌面样式 ========== */
+body.force-desktop {
+  min-width: 1240px !important;
+  width: auto !important;
+  overflow-x: auto !important;
+}
+body.force-desktop .app-layout {
+  height: 100vh !important;
+  overflow: hidden !important;
+}
+body.force-desktop .menu-toggle {
+  display: none !important;
+}
+body.force-desktop .sidebar {
+  position: relative !important;
+  top: auto !important;
+  left: auto !important;
+  width: var(--sidebar-width) !important;
+  min-width: var(--sidebar-width) !important;
+  transform: none !important;
+  box-shadow: none !important;
+  z-index: 1 !important;
+}
+body.force-desktop .sidebar-overlay {
+  display: none !important;
+}
+body.force-desktop .main-content {
+  width: auto !important;
+  max-width: none !important;
+  padding-top: 0 !important;
+  overflow: hidden !important;
+}
+body.force-desktop .page-header,
+body.force-desktop .platform-bar,
+body.force-desktop .toolbar,
+body.force-desktop .content-area,
+body.force-desktop .scroll-container {
+  padding-left: 28px !important;
+  padding-right: 28px !important;
+}
+body.force-desktop .card-grid {
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)) !important;
+  gap: 16px !important;
+}
+body.force-desktop .view-switcher {
+  transform: translateY(0);
+}
+
+/* ========== 通用响应式内容区 padding 类（替代 JS 里写死的 padding:20px 28px） ========== */
+.resp-section {
+  padding: 20px 28px;
+}
+@media (max-width: 1024px) {
+  .resp-section { padding: 16px 18px; }
+}
+@media (max-width: 768px) {
+  .resp-section { padding: 14px 14px; }
+}
+@media (max-width: 480px) {
+  .resp-section { padding: 12px 12px; }
+}
+
+/* ========== 卡片点击态增强：触摸设备不 hover，改为 active 高亮 ========== */
+@media (hover: none) and (pointer: coarse) {
+  .content-card:hover,
+  .all-entry-card:hover,
+  .kb-category-card:hover,
+  .viral-card:hover,
+  .rule-card:hover,
+  .benchmark-card:hover,
+  .arch-card:hover,
+  .account-card:hover,
+  .dashboard-metric-card:hover {
+    transform: none !important;
+    box-shadow: var(--shadow-sm) !important;
+  }
+  .content-card:active,
+  .all-entry-card:active,
+  .kb-category-card:active,
+  .viral-card:active,
+  .rule-card:active,
+  .benchmark-card:active,
+  .arch-card:active,
+  .account-card:active,
+  .dashboard-metric-card:active {
+    transform: scale(0.985) !important;
+    box-shadow: var(--shadow) !important;
+  }
+  .nav-item:hover {
+    background: var(--color-sidebar-hover);
+  }
+  .primary-action-go:hover {
+    transform: none;
+    box-shadow: 0 2px 6px rgba(249,168,37,0.3);
+  }
+  .secondary-action-btn:hover {
+    background: rgba(60,60,67,0.08);
+  }
+  .platform-btn:hover {
+    transform: none;
+  }
+}
+
+/* ========== iOS 安全区 ========== */
+@supports (padding: max(0px)) {
+  body.force-mobile,
+  @media (max-width: 768px) {
+    body {
+      padding-left: max(0px, env(safe-area-inset-left));
+      padding-right: max(0px, env(safe-area-inset-right));
+      padding-bottom: max(0px, env(safe-area-inset-bottom));
+    }
   }
 }

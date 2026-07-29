@@ -28,6 +28,11 @@ const App = {
    * 初始化应用
    */
   init() {
+    // V4.5：优先初始化视图模式（auto / desktop / mobile），必须在渲染前
+    this.initViewMode();
+    this.bindViewSwitcher();
+    this.bindViewModeGesture();
+
     this.renderSidebar();
     this.bindSidebar();
     this.bindSubTabs();
@@ -42,8 +47,113 @@ const App = {
     Filters.init();
   },
 
+  /* ========== V4.5 视图模式切换（论坛风格：自适应 / 网页版 / 手机版） ========== */
+  initViewMode() {
+    let mode = 'auto';
+    try {
+      const saved = localStorage.getItem('melbeacon_view_mode');
+      if (saved === 'desktop' || saved === 'mobile' || saved === 'auto') {
+        mode = saved;
+      }
+    } catch (e) { /* localStorage 不可用时默认 auto */ }
+    this.applyViewMode(mode);
+  },
+
+  applyViewMode(mode) {
+    const body = document.body;
+    body.classList.remove('force-desktop', 'force-mobile');
+
+    if (mode === 'desktop') {
+      body.classList.add('force-desktop');
+      // 桌面版：移除 sidebar open 状态不强制（桌面端不受影响
+    } else if (mode === 'mobile') {
+      body.classList.add('force-mobile');
+      // V4.5：切到手机版时，强制关闭侧边栏（移除 .open、移除遮罩
+      const sidebar = document.getElementById('sidebar') || document.querySelector('.sidebar');
+      if (sidebar) sidebar.classList.remove('open');
+      const overlay = document.querySelector('.sidebar-overlay');
+      if (overlay) overlay.style.display = 'none';
+    }
+    // auto 模式不加 class，使用媒体查询
+
+    // 同步按钮高亮
+    document.querySelectorAll('.view-switch-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.viewmode === mode);
+    });
+
+    // 持久化
+    try { localStorage.setItem('melbeacon_view_mode', mode); } catch (e) {}
+  },
+
+  bindViewSwitcher() {
+    const switcher = document.getElementById('view-switcher');
+    const closeBtn = document.getElementById('view-switcher-close');
+
+    // 首次加载时显示切换条 3.5 秒后隐藏，用户可随时通过手势唤出
+    if (switcher) {
+      switcher.classList.add('show');
+      setTimeout(() => switcher.classList.remove('show'), 3500);
+    }
+
+    // 绑定三个按钮
+    document.querySelectorAll('.view-switch-btn').forEach(btn => {
+      const handler = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const mode = btn.dataset.viewmode;
+        this.applyViewMode(mode);
+        this.showToast('已切换为「' + btn.textContent.replace(/^[^\s]+\s*/, '') + '」');
+      };
+      btn.addEventListener('click', handler);
+      btn.addEventListener('touchend', handler, { passive: false });
+    });
+
+    // 关闭按钮
+    if (closeBtn) {
+      const closeHandler = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (switcher) switcher.classList.remove('show');
+      };
+      closeBtn.addEventListener('click', closeHandler);
+      closeBtn.addEventListener('touchend', closeHandler, { passive: false });
+    }
+  },
+
   /**
-   * 移动端侧边栏切换（V4.2 第三阶段新增）
+   * 手势唤出切换条：双击顶部 / 三指双击页面，显示视图切换条
+   */
+  bindViewModeGesture() {
+    let lastTap = 0;
+    const switcher = document.getElementById('view-switcher');
+    if (!switcher) return;
+
+    document.addEventListener('touchend', (e) => {
+      // 三指点击
+      if (e.touches && e.touches.length >= 3) {
+        switcher.classList.toggle('show');
+        return;
+      }
+      // 双击顶部 60px 范围
+      const currentTime = new Date().getTime();
+      const tapLength = currentTime - lastTap;
+      const y = (e.changedTouches && e.changedTouches[0]) ? e.changedTouches[0].clientY : 0;
+      if (tapLength < 350 && tapLength > 0 && y < 80) {
+        switcher.classList.toggle('show');
+      }
+      lastTap = currentTime;
+    });
+
+    // 桌面端：双击页面最顶部也可唤出
+    document.addEventListener('dblclick', (e) => {
+      if (e.clientY < 60) {
+        switcher.classList.toggle('show');
+      }
+    });
+  },
+
+  /**
+   * 移动端侧边栏切换（V4.2 第三阶段新增，V4.5 加入触摸事件和强制模式支持）
    * 通过汉堡按钮唤出抽屉式侧边栏，点击遮罩或导航项后自动收起
    */
   bindMobileSidebar() {
@@ -62,29 +172,42 @@ const App = {
       overlay.classList.remove('show');
       toggle.textContent = '☰';
     };
+    this._closeMobileSidebar = closeSidebar;
 
-    toggle.addEventListener('click', (e) => {
+    const toggleHandler = (e) => {
+      e.preventDefault();
       e.stopPropagation();
       if (sidebar.classList.contains('open')) {
         closeSidebar();
       } else {
         openSidebar();
       }
-    });
+    };
+    toggle.addEventListener('click', toggleHandler);
+    toggle.addEventListener('touchend', toggleHandler, { passive: false });
 
-    overlay.addEventListener('click', closeSidebar);
+    const overlayHandler = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      closeSidebar();
+    };
+    overlay.addEventListener('click', overlayHandler);
+    overlay.addEventListener('touchend', overlayHandler, { passive: false });
 
-    // 点击导航项后自动收起（事件委托）
+    // 点击导航项后自动收起（事件委托 + 支持强制手机模式）
     sidebar.addEventListener('click', (e) => {
       const navItem = e.target.closest('.nav-item');
-      if (navItem && window.innerWidth <= 1024) {
+      const isMobileMode = document.body.classList.contains('force-mobile') || window.innerWidth <= 1024;
+      if (navItem && isMobileMode) {
         closeSidebar();
       }
     });
 
-    // 屏幕尺寸放大到桌面端时，重置抽屉状态
+    // 屏幕尺寸放大到桌面端时，重置抽屉状态（仅 auto 模式下生效）
     window.addEventListener('resize', () => {
-      if (window.innerWidth > 1024) {
+      const forceDesktop = document.body.classList.contains('force-desktop');
+      const forceMobile = document.body.classList.contains('force-mobile');
+      if (!forceDesktop && !forceMobile && window.innerWidth > 1024) {
         closeSidebar();
       }
     });
@@ -131,16 +254,24 @@ const App = {
   },
 
   bindSidebar() {
-    document.querySelectorAll('.nav-item').forEach(item => {
-      item.addEventListener('click', () => {
-        const tabId = item.dataset.tab;
+    // 使用事件委托 + touchend 双通道（兼容动态渲染的 nav-item）
+    const handle = (e) => {
+      const item = e.target.closest('.nav-item');
+      if (!item) return;
+      if (e.type === 'touchend') e.preventDefault();
+      const tabId = item.dataset.tab;
+      if (tabId === 'tab-all') {
+        this.switchTab('tab-all');
+      } else {
         this.switchTab(tabId);
-      });
-    });
+      }
+    };
+    document.addEventListener('click', handle);
+    document.addEventListener('touchend', handle, { passive: false });
   },
 
   /**
-   * 切换主标签页
+   * 切换主标签页（V4.5 移动端增强：关闭侧边栏 + 滚回顶部）
    */
   switchTab(tabId) {
     this.state.activeTab = tabId;
@@ -163,6 +294,18 @@ const App = {
       // 无对应内容区的标签页（如"全部入口"），不做处理
       return;
     }
+
+    // 移动端 / 强制手机模式：切换后关闭侧边栏，滚到顶部
+    const isMobileMode = document.body.classList.contains('force-mobile') || window.innerWidth <= 1024;
+    if (isMobileMode && typeof this._closeMobileSidebar === 'function') {
+      this._closeMobileSidebar();
+    }
+    // 内容区滚回顶部
+    const scrollContainers = targetContent.querySelectorAll('.scroll-container');
+    scrollContainers.forEach(sc => { if (sc.scrollTo) sc.scrollTo({ top: 0 }); });
+    // 页面根滚回顶部（用于高度自适应的布局）
+    if (window.scrollTo) window.scrollTo({ top: 0, behavior: 'auto' });
+    if (targetContent.scrollTo) targetContent.scrollTo({ top: 0 });
 
     // 渲染对应标签页内容
     this.renderTabContent(tabId);
@@ -212,57 +355,71 @@ const App = {
     }
   },
 
-  /* ========== 子标签切换 ========== */
+  /* ========== 子标签切换（V4.5 增加 touchend 双通道） ========== */
   bindSubTabs() {
-    document.addEventListener('click', (e) => {
+    const handleSubTab = (e) => {
       const subTabEl = e.target.closest('.sub-tab');
-      if (subTabEl) {
-        const subTabId = subTabEl.dataset.subtab;
-        const container = subTabEl.closest('.sub-tabs');
-        const tabId = container.dataset.tab;
+      if (!subTabEl) return;
+      if (e.type === 'touchend') e.preventDefault();
 
-        // 更新激活态
-        container.querySelectorAll('.sub-tab').forEach(t => t.classList.remove('active'));
-        subTabEl.classList.add('active');
+      const subTabId = subTabEl.dataset.subtab;
+      const container = subTabEl.closest('.sub-tabs');
+      if (!container) return;
+      const tabId = container.dataset.tab;
 
-        // 更新状态
-        this.state.activeSubTab[tabId] = subTabId;
+      // 更新激活态
+      container.querySelectorAll('.sub-tab').forEach(t => t.classList.remove('active'));
+      subTabEl.classList.add('active');
 
-        // 隐藏所有子内容
-        const tabContent = document.getElementById('content-' + tabId);
-        tabContent.querySelectorAll('.sub-content').forEach(c => c.classList.remove('active'));
+      // 更新状态
+      this.state.activeSubTab[tabId] = subTabId;
 
-        // 显示目标子内容
-        const targetSubContent = document.getElementById(subTabId);
-        if (targetSubContent) {
-          targetSubContent.classList.add('active');
-        }
+      // 隐藏所有子内容
+      const tabContent = document.getElementById('content-' + tabId);
+      if (!tabContent) return;
+      tabContent.querySelectorAll('.sub-content').forEach(c => c.classList.remove('active'));
 
-        // 渲染子内容
-        this.renderSubContent(tabId, subTabId);
+      // 显示目标子内容
+      const targetSubContent = document.getElementById(subTabId);
+      if (targetSubContent) {
+        targetSubContent.classList.add('active');
       }
-    });
+
+      // 移动端：切换子标签后，内容区滚动到顶部
+      const scrollContainers = tabContent.querySelectorAll('.scroll-container');
+      scrollContainers.forEach(sc => { if (sc.scrollTo) sc.scrollTo({ top: 0, behavior: 'instant' in window ? 'instant' : 'auto' }); });
+
+      // 渲染子内容
+      this.renderSubContent(tabId, subTabId);
+    };
+    document.addEventListener('click', handleSubTab);
+    document.addEventListener('touchend', handleSubTab, { passive: false });
   },
 
   /**
-   * 平台选择栏绑定
+   * 平台选择栏绑定（V4.5 增加 touchend 双通道）
    */
   bindPlatformBar() {
-    document.addEventListener('click', (e) => {
-      if (e.target.classList.contains('platform-btn')) {
-        const platformBar = e.target.closest('.platform-bar');
-        platformBar.querySelectorAll('.platform-btn').forEach(b => b.classList.remove('active'));
-        e.target.classList.add('active');
+    const handlePlatform = (e) => {
+      const btn = e.target.closest('.platform-btn');
+      if (!btn) return;
+      if (e.type === 'touchend') e.preventDefault();
 
-        const platform = e.target.dataset.platform;
-        this.state.selectedPlatform = platform;
-        Filters.state.social.platform = platform;
+      const platformBar = btn.closest('.platform-bar');
+      if (!platformBar) return;
+      platformBar.querySelectorAll('.platform-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
 
-        // 重新渲染当前子标签内容
-        const subTab = this.state.activeSubTab['tab-social'];
-        this.renderSubContent('tab-social', subTab);
-      }
-    });
+      const platform = btn.dataset.platform;
+      this.state.selectedPlatform = platform;
+      Filters.state.social.platform = platform;
+
+      // 重新渲染当前子标签内容
+      const subTab = this.state.activeSubTab['tab-social'];
+      this.renderSubContent('tab-social', subTab);
+    };
+    document.addEventListener('click', handlePlatform);
+    document.addEventListener('touchend', handlePlatform, { passive: false });
   },
 
   /**
@@ -2793,11 +2950,16 @@ const App = {
     const container = document.getElementById('hub-automation');
     if (!container) return;
 
+    // V4.5：修复缺失 status → 加入 active，并提供兜底避免 undefined 访问 .class
     const statusMap = {
       running: { text: '运行中', class: 'running' },
-      paused: { text: '已暂停', class: 'paused' },
-      error: { text: '错误', class: 'error' }
+      paused:  { text: '已暂停', class: 'paused' },
+      error:   { text: '错误',   class: 'error'  },
+      active:  { text: '运行中', class: 'running' },
+      pending: { text: '待启动', class: 'pending' },
+      completed: { text: '已完成', class: 'completed' }
     };
+    const FALLBACK = { text: '未知', class: 'pending' };
 
     // 按角色过滤自动化任务
     const userDomain = (typeof Auth !== 'undefined' && Auth.getDomain) ? Auth.getDomain() : null;
@@ -2816,11 +2978,13 @@ const App = {
     container.innerHTML = `
       <div style="padding: 20px 28px;">
         ${filteredTasks.length === 0 ? '<div style="text-align:center; padding:40px; color:var(--color-text-secondary);">暂无相关自动化任务</div>' : ''}
-        ${filteredTasks.map(t => `
+        ${filteredTasks.map(t => {
+          const s = statusMap[t.status] || FALLBACK;
+          return `
           <div class="arch-card">
             <div class="arch-card-header">
               <h3>${t.name}</h3>
-              <span class="status-badge ${statusMap[t.status].class}">${statusMap[t.status].text}</span>
+              <span class="status-badge ${s.class}">${s.text}</span>
             </div>
             <div class="arch-meta">
               <span>⏰ ${t.schedule}</span>
@@ -2829,14 +2993,14 @@ const App = {
               <span>🔄 下次: ${t.nextRun}</span>
             </div>
             <div style="margin-top: 10px;">
-              ${t.status === 'running' ? `<button class="card-action-btn" onclick="App.showToast('已暂停任务')">⏸ 暂停</button>` : ''}
-              ${t.status === 'paused' ? `<button class="card-action-btn primary" onclick="App.showToast('已启动任务')">▶ 启动</button>` : ''}
+              ${t.status === 'running' || t.status === 'active' ? `<button class="card-action-btn" onclick="App.showToast('已暂停任务')">⏸ 暂停</button>` : ''}
+              ${t.status === 'paused' || t.status === 'pending' ? `<button class="card-action-btn primary" onclick="App.showToast('已启动任务')">▶ 启动</button>` : ''}
               ${t.status === 'error' ? `<button class="card-action-btn primary" onclick="App.showToast('已重试任务')">🔄 重试</button>` : ''}
               <button class="card-action-btn" onclick="App.showToast('查看运行日志')">📋 日志</button>
               <button class="card-action-btn" onclick="App.showToast('已复制任务配置')">⚙️ 配置</button>
             </div>
           </div>
-        `).join('')}
+        `;}).join('')}
       </div>
     `;
   },
@@ -6150,23 +6314,45 @@ const App = {
     `;
   },
 
+  /* ========== 通用：给「点击」同时绑定 click + touchend，解决移动端 300ms 延迟 ========== */
+  _bindDualEvent(targetSelector, handler, options) {
+    const wrap = (e) => {
+      // touchend 时先阻止默认，避免和 click 重复触发
+      if (e.type === 'touchend') {
+        e.preventDefault();
+      }
+      handler.call(this, e);
+    };
+    document.addEventListener('click', (e) => {
+      if (e.target.closest(targetSelector)) wrap(e);
+    });
+    document.addEventListener('touchend', (e) => {
+      if (e.target.closest(targetSelector)) wrap(e);
+    }, options || { passive: false });
+  },
+
   /* ========== 快捷操作绑定 ========== */
   bindQuickActions() {
-    document.addEventListener('click', (e) => {
-      // 社群运营快捷操作
-      if (e.target.classList.contains('comm-action-btn')) {
-        this.showToast('已复制提示词到剪贴板');
-      }
+    this._bindDualEvent('.comm-action-btn', () => {
+      this.showToast('已复制提示词到剪贴板');
+    });
+    // 视图切换按钮 / 所有带 onclick 的卡片按钮——通过 delegate 兜底
+    this._bindDualEvent('.view-toggle button', (e) => {
+      const btn = e.target.closest('.view-toggle button');
+      if (!btn) return;
+      const group = btn.closest('.view-toggle');
+      if (!group) return;
+      group.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      // 触发卡片视图切换（目前只有样式变化，这里留钩子）
     });
   },
 
   /* ========== 同步按钮 ========== */
   bindSyncBtn() {
-    document.addEventListener('click', (e) => {
-      if (e.target.classList.contains('sync-btn')) {
-        this.showToast('正在同步到云端...');
-        setTimeout(() => this.showToast('同步完成'), 1500);
-      }
+    this._bindDualEvent('.sync-btn', () => {
+      this.showToast('正在同步到云端...');
+      setTimeout(() => this.showToast('同步完成'), 1500);
     });
   },
 

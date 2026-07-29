@@ -33,65 +33,74 @@ const Filters = {
   },
 
   /**
-   * 绑定筛选标签点击事件（事件委托）
+   * 通用：给选择器同时绑定 click + touchend
+   */
+  _on(selector, handler) {
+    const wrap = (e) => {
+      if (!e.target.closest(selector)) return;
+      if (e.type === 'touchend') e.preventDefault();
+      handler.call(this, e);
+    };
+    document.addEventListener('click', wrap);
+    document.addEventListener('touchend', wrap, { passive: false });
+  },
+
+  /**
+   * 绑定筛选标签点击事件（事件委托，V4.5 加 touchend 双通道）
    */
   bindFilterTags() {
-    document.addEventListener('click', (e) => {
-      // 普通筛选标签
-      if (e.target.classList.contains('filter-tag') && !e.target.classList.contains('add-custom')) {
-        const filterArea = e.target.closest('.filter-area');
-        if (!filterArea) return;
+    this._on('.filter-tag:not(.add-custom)', (e) => {
+      const tag = e.target.closest('.filter-tag');
+      const filterArea = tag.closest('.filter-area');
+      if (!filterArea) return;
 
-        const row = e.target.closest('.filter-row');
-        const dimension = row.dataset.dimension;
-        const value = e.target.dataset.value;
+      const row = tag.closest('.filter-row');
+      const dimension = row.dataset.dimension;
+      const value = tag.dataset.value;
 
-        // 取消同行其他标签的激活
-        row.querySelectorAll('.filter-tag').forEach(t => t.classList.remove('active'));
-        e.target.classList.add('active');
+      // 取消同行其他标签的激活
+      row.querySelectorAll('.filter-tag').forEach(t => t.classList.remove('active'));
+      tag.classList.add('active');
 
-        // 更新状态
-        const activeTab = App.state.activeTab;
-        if (activeTab === 'tab-social' && this.state.social[dimension] !== undefined) {
-          this.state.social[dimension] = value;
-        } else if (activeTab === 'tab-courseware' && this.state.courseware[dimension] !== undefined) {
-          this.state.courseware[dimension] = value;
-        } else if (activeTab === 'tab-offline' && this.state.offline[dimension] !== undefined) {
-          this.state.offline[dimension] = value;
-        } else if (activeTab === 'tab-training' && this.state.training[dimension] !== undefined) {
-          this.state.training[dimension] = value;
-        }
-
-        // 重新渲染卡片
-        this.applyFilters();
+      // 更新状态
+      const activeTab = App.state.activeTab;
+      if (activeTab === 'tab-social' && this.state.social[dimension] !== undefined) {
+        this.state.social[dimension] = value;
+      } else if (activeTab === 'tab-courseware' && this.state.courseware[dimension] !== undefined) {
+        this.state.courseware[dimension] = value;
+      } else if (activeTab === 'tab-offline' && this.state.offline[dimension] !== undefined) {
+        this.state.offline[dimension] = value;
+      } else if (activeTab === 'tab-training' && this.state.training[dimension] !== undefined) {
+        this.state.training[dimension] = value;
       }
+
+      // 重新渲染卡片
+      this.applyFilters();
     });
   },
 
   /**
-   * 绑定自定义赛道添加功能
+   * 绑定自定义赛道添加功能（V4.5 加 touchend）
    */
   bindCustomTrack() {
-    document.addEventListener('click', (e) => {
-      // 点击"+自定义赛道"显示输入框
-      if (e.target.classList.contains('add-custom')) {
-        const input = document.getElementById('custom-track-input');
-        if (input) {
-          input.classList.add('show');
-          const textInput = input.querySelector('input');
-          if (textInput) textInput.focus();
-        }
+    this._on('.add-custom', () => {
+      const input = document.getElementById('custom-track-input');
+      if (input) {
+        input.classList.add('show');
+        const textInput = input.querySelector('input');
+        if (textInput) textInput.focus();
       }
+    });
 
-      // 点击"添加"按钮
-      if (e.target.id === 'add-track-btn') {
-        const input = document.getElementById('custom-track-name');
-        const value = input.value.trim();
-        if (value) {
-          this.addCustomTrack(value);
-          input.value = '';
-          document.getElementById('custom-track-input').classList.remove('show');
-        }
+    this._on('#add-track-btn', () => {
+      const input = document.getElementById('custom-track-name');
+      if (!input) return;
+      const value = input.value.trim();
+      if (value) {
+        this.addCustomTrack(value);
+        input.value = '';
+        const wrap = document.getElementById('custom-track-input');
+        if (wrap) wrap.classList.remove('show');
       }
     });
 
@@ -145,24 +154,27 @@ const Filters = {
   },
 
   /**
-   * 绑定视图切换
+   * 绑定视图切换（V4.5 加 touchend 双通道）
    */
   bindViewToggle() {
-    document.addEventListener('click', (e) => {
-      if (e.target.closest('.view-toggle button')) {
-        const btn = e.target.closest('button');
-        const toggle = btn.closest('.view-toggle');
-        toggle.querySelectorAll('button').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
+    this._on('.view-toggle button', (e) => {
+      const btn = e.target.closest('button');
+      const toggle = btn.closest('.view-toggle');
+      if (!toggle) return;
+      toggle.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
 
-        const view = btn.dataset.view;
-        const grid = document.querySelector('.card-grid');
-        if (grid) {
-          if (view === 'list') {
-            grid.classList.add('list-view');
-          } else {
-            grid.classList.remove('list-view');
-          }
+      const view = btn.dataset.view;
+      // 找到同标签页下最近的 card-grid（不是整个文档第一个）
+      const tabContent = btn.closest('.tab-content');
+      const grid = tabContent
+        ? (tabContent.querySelector('.card-grid') || document.querySelector('.card-grid'))
+        : document.querySelector('.card-grid');
+      if (grid) {
+        if (view === 'list') {
+          grid.classList.add('list-view');
+        } else {
+          grid.classList.remove('list-view');
         }
       }
     });

@@ -2,12 +2,28 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="format-detection" content="telephone=no">
   <title>MelBeacon 灯塔系统 · 工作台</title>
   <link rel="stylesheet" href="css/style.css">
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
+  <!-- 论坛风格切换条：网页版 / 手机版（顶部悬浮，全局可见） -->
+  <div class="view-switcher" id="view-switcher">
+    <div class="view-switcher-inner">
+      <span class="view-switcher-label">显示模式：</span>
+      <div class="view-switcher-btns">
+        <button class="view-switch-btn" data-viewmode="auto" id="vm-auto">🖥️ 自适应</button>
+        <button class="view-switch-btn" data-viewmode="desktop" id="vm-desktop">💻 网页版</button>
+        <button class="view-switch-btn" data-viewmode="mobile" id="vm-mobile">📱 手机版</button>
+      </div>
+    </div>
+    <button class="view-switcher-close" id="view-switcher-close" aria-label="关闭">×</button>
+  </div>
+
   <!-- 移动端汉堡按钮（V4.2 第三阶段新增） -->
   <button class="menu-toggle" id="menu-toggle" aria-label="切换侧边栏">☰</button>
   <!-- 移动端遮罩层 -->
