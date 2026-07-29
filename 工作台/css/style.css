@@ -2163,142 +2163,202 @@ body.auth-is-admin .admin-only {
   opacity: 1;
 }
 
-/* 断点 1：≤1280px —— 放宽最小宽度，允许横向滚动应急 */
-@media (max-width: 1280px) {
-  body {
-    min-width: 100%;
-    overflow-x: auto;
-  }
-}
+/* ============================================================
+ * 移动端响应式（彻底重写 V4.4）
+ * 解决 body 最小宽度、侧边栏 min-width、sub-tabs max-width、
+ * 各种固定 padding 等在手机端溢出的问题。
+ * ============================================================ */
 
-/* 断点 2：≤1024px —— 平板：侧边栏折叠为抽屉，网格自适应 */
+/* 断点 A：≤1024px —— 平板/大屏手机：侧边栏变抽屉，主内容全宽 */
 @media (max-width: 1024px) {
+  /* 核心：覆盖桌面端写死的最小宽度，强制允许视口缩放 */
   body {
-    min-width: 100%;
+    min-width: 0 !important;
+    width: 100% !important;
     overflow-x: hidden;
   }
 
-  .app-layout {
-    flex-direction: row;
+  html {
+    overflow-x: hidden;
   }
 
-  /* 汉堡按钮显形 */
+  /* 布局：移除固定高度，让页面可滚动 */
+  .app-layout {
+    height: auto;
+    min-height: 100vh;
+    overflow: visible;
+  }
+
+  /* 汉堡按钮可见 */
   .menu-toggle {
     display: flex;
   }
 
-  /* 侧边栏抽屉化 */
+  /* 侧边栏：从流式布局变为固定抽屉 */
   .sidebar {
-    position: fixed;
+    position: fixed !important;
     top: 0;
     left: 0;
     bottom: 0;
-    width: var(--sidebar-width);
+    width: 280px !important;
+    min-width: 0 !important;  /* 关键：覆盖桌面端 min-width:240px */
     z-index: 999;
     transform: translateX(-100%);
-    transition: transform 0.28s ease;
-    box-shadow: 4px 0 16px rgba(0,0,0,0.18);
+    transition: transform 0.28s cubic-bezier(0.4,0,0.2,1);
+    box-shadow: 4px 0 24px rgba(0,0,0,0.22);
+    -webkit-overflow-scrolling: touch;
   }
 
   .sidebar.open {
     transform: translateX(0);
   }
 
-  /* 主内容区扩展到全宽 */
+  /* 主内容区：全宽展开，顶部给汉堡按钮让位 */
   .main-content {
-    width: 100%;
-    padding-top: 56px; /* 给顶部汉堡按钮腾出空间 */
+    width: 100% !important;
+    max-width: 100% !important;  /* 关键：覆盖 calc(100vw - sidebar - 56px) */
+    padding-top: 58px;
+    overflow: visible;
   }
 
-  /* 内容内边距收紧 */
+  /* 各区块内边距统一收紧为平板版 */
   .page-header,
   .platform-bar,
-  .sub-tabs,
   .toolbar,
   .content-area,
   .scroll-container {
-    padding-left: 20px;
-    padding-right: 20px;
+    padding-left: 18px !important;
+    padding-right: 18px !important;
+  }
+
+  /* 子标签栏：移除视口关联的 max-width，允许换行或横向滑 */
+  .sub-tabs {
+    margin-left: 18px !important;
+    margin-right: 18px !important;
+    max-width: none !important;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
   /* 卡片网格：平板 2 列 */
   .card-grid,
   .all-entry-grid {
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
     gap: 12px;
   }
 
-  /* 4 列统计卡 → 2 列 */
   .benchmark-stats,
   .stats-grid-4 {
     grid-template-columns: repeat(2, 1fr) !important;
   }
 
-  /* 3 列网格 → 2 列 */
   .stats-grid-3,
   .grid-3 {
     grid-template-columns: repeat(2, 1fr) !important;
   }
 
-  /* 子标签栏横向滚动 */
-  .sub-tabs {
+  .grid-2 {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  /* 平台栏允许横向滑 */
+  .platform-bar {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
+    flex-wrap: nowrap;
   }
 }
 
-/* 断点 3：≤768px —— 手机：单列、紧凑间距 */
+/* 断点 B：≤768px —— 手机：单列卡片 + 更紧凑 */
 @media (max-width: 768px) {
   body {
-    font-size: 14px;
+    font-size: 13.5px;
   }
 
+  /* 汉堡按钮位置微调 */
+  .menu-toggle {
+    top: 12px;
+    left: 12px;
+    width: 38px;
+    height: 38px;
+    font-size: 18px;
+    background: rgba(13,40,24,0.85);
+    -webkit-backdrop-filter: blur(14px) saturate(180%);
+    backdrop-filter: blur(14px) saturate(180%);
+  }
+
+  /* 主内容顶部间距 */
+  .main-content {
+    padding-top: 54px;
+  }
+
+  /* 页面头部：紧凑 */
   .page-header {
-    padding: 14px 16px 10px;
+    padding: 12px 14px 10px !important;
   }
 
   .page-header h2 {
-    font-size: 18px;
+    font-size: 17px;
+    line-height: 1.3;
   }
 
   .page-header p {
-    font-size: 12px;
+    font-size: 11.5px;
+    margin-top: 2px;
   }
 
+  /* 所有内容区块统一 14px 边距 */
+  .page-header,
   .platform-bar,
-  .sub-tabs,
   .toolbar,
   .content-area,
   .scroll-container {
-    padding-left: 14px;
-    padding-right: 14px;
+    padding-left: 14px !important;
+    padding-right: 14px !important;
+  }
+
+  .platform-bar {
+    padding-top: 10px !important;
+    padding-bottom: 10px !important;
+    gap: 6px;
   }
 
   .toolbar {
+    padding-top: 10px !important;
+    padding-bottom: 10px !important;
     flex-wrap: wrap;
     gap: 8px;
   }
 
-  /* 卡片网格：手机单列 */
+  .sub-tabs {
+    margin-left: 14px !important;
+    margin-right: 14px !important;
+    margin-top: 10px !important;
+    padding: 3px !important;
+    gap: 1px !important;
+  }
+
+  .sub-tab {
+    padding: 8px 11px !important;
+    font-size: 12.5px !important;
+  }
+
+  /* 卡片网格：全部单列 */
   .card-grid,
   .all-entry-grid {
     grid-template-columns: 1fr !important;
     gap: 10px;
   }
 
-  /* 4 列 / 3 列统计卡 → 单列堆叠 */
   .benchmark-stats,
   .stats-grid-4,
   .stats-grid-3,
   .grid-3,
-  .grid-2 {
-    grid-template-columns: 1fr !important;
-  }
-
-  /* 2 列网格 → 单列 */
+  .grid-2,
   .grid-2-cards,
   .two-col-grid {
     grid-template-columns: 1fr !important;
+    gap: 10px;
   }
 
   /* 卡片内边距收紧 */
@@ -2307,47 +2367,18 @@ body.auth-is-admin .admin-only {
   .rule-card,
   .viral-card,
   .benchmark-card {
-    padding: 12px;
+    padding: 12px !important;
+    border-radius: var(--radius) !important;
   }
 
-  /* 子标签紧凑 */
-  .sub-tab {
-    padding: 10px 12px;
-    font-size: 13px;
-  }
-
-  /* 平台按钮紧凑 */
+  /* 平台按钮：胶囊但更小 */
   .platform-btn {
-    padding: 6px 12px;
+    padding: 5px 11px;
     font-size: 12px;
+    flex-shrink: 0;
   }
 
-  /* 隐藏导航分组标题，节省空间 */
-  .nav-group-title {
-    font-size: 10px;
-    padding: 6px 20px 2px;
-  }
-
-  .nav-item {
-    padding: 12px 20px;
-    font-size: 13px;
-  }
-}
-
-/* 断点 4：≤480px —— 极小屏：进一步压缩 */
-@media (max-width: 480px) {
-  .menu-toggle {
-    width: 36px;
-    height: 36px;
-    font-size: 18px;
-    top: 10px;
-    left: 10px;
-  }
-
-  .main-content {
-    padding-top: 52px;
-  }
-
+  /* 侧边栏内部：紧凑 */
   .sidebar-logo {
     padding: 18px 16px 12px;
   }
@@ -2356,7 +2387,78 @@ body.auth-is-admin .admin-only {
     font-size: 17px;
   }
 
-  .page-header h2 {
+  .nav-group-title {
+    font-size: 10px;
+    padding: 6px 18px 2px;
+  }
+
+  .nav-item {
+    padding: 10px 14px;
+    font-size: 13px;
+  }
+
+  /* 搜索框最大宽度取消，允许铺满 */
+  .search-box {
+    max-width: 100%;
+  }
+
+  /* 工具栏里的按钮尽量铺满可用空间 */
+  .toolbar .btn,
+  .toolbar .view-toggle,
+  .toolbar > select,
+  .toolbar > input {
+    min-height: 36px;
+  }
+}
+
+/* 断点 C：≤480px —— 极小屏（SE/5 寸以下）：再压缩一档 */
+@media (max-width: 480px) {
+  .menu-toggle {
+    width: 34px;
+    height: 34px;
     font-size: 16px;
+    top: 8px;
+    left: 8px;
+    border-radius: 8px;
+  }
+
+  .main-content {
+    padding-top: 48px;
+  }
+
+  .page-header h2 {
+    font-size: 15.5px;
+  }
+
+  .page-header,
+  .platform-bar,
+  .toolbar,
+  .content-area,
+  .scroll-container {
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+  }
+
+  .sub-tabs {
+    margin-left: 12px !important;
+    margin-right: 12px !important;
+  }
+
+  .content-card,
+  .arch-card,
+  .rule-card,
+  .viral-card,
+  .benchmark-card {
+    padding: 10px !important;
+  }
+
+  .platform-btn {
+    padding: 4.5px 9px;
+    font-size: 11.5px;
+  }
+
+  .sub-tab {
+    padding: 7px 10px !important;
+    font-size: 12px !important;
   }
 }
