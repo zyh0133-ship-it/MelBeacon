@@ -45,6 +45,9 @@ const App = {
     // 默认激活第一个标签页
     this.switchTab('tab-social');
     Filters.init();
+
+    // 初始化时检查同步服务器状态（飞书同步）
+    this.checkSyncServer();
   },
 
   /* ========== V4.5 视图模式切换（论坛风格：自适应 / 网页版 / 手机版） ========== */
@@ -498,6 +501,14 @@ const App = {
    */
   renderAccountOverview() {
     const container = document.getElementById('social-overview');
+    if (!container) return;
+
+    // 空数据检查
+    if (Object.keys(accountOverview).length === 0) {
+      container.innerHTML = '<div style="text-align:center; padding:60px 20px; color:var(--color-text-secondary);"><div style="font-size:48px; margin-bottom:16px; opacity:0.3;">📭</div><div style="font-size:15px; margin-bottom:8px;">暂无账号数据</div><div style="font-size:13px; opacity:0.7;">请在自媒体运营中添加平台账号信息</div></div>';
+      return;
+    }
+
     const platform = this.state.selectedPlatform;
 
     let accounts = [];
@@ -513,7 +524,7 @@ const App = {
     };
 
     container.innerHTML = `
-      <div style="padding: 20px 28px;">
+      <div class="resp-section">
         <div class="account-overview-cards">
           ${accounts.map(a => `
             <div class="account-card">
@@ -748,11 +759,11 @@ const App = {
   renderViralContent() {
     const container = document.getElementById('social-viral');
     container.innerHTML = `
-      <div style="padding: 20px 28px;">
+      <div class="resp-section">
         <div style="margin-bottom: 16px; padding: 12px 16px; background: var(--color-accent-light); border-radius: 8px; font-size: 13px; color: var(--color-text);">
           💡 主动发现低粉账号的爆款内容，学习其选题和创作技巧
         </div>
-        ${viralContentCards.map(v => `
+        ${viralContentCards.length === 0 ? '<div style="text-align:center; padding:60px 20px; color:var(--color-text-secondary);"><div style="font-size:48px; margin-bottom:16px; opacity:0.3;">📭</div><div style="font-size:15px; margin-bottom:8px;">暂无爆款内容</div><div style="font-size:13px; opacity:0.7;">数据将在自动化任务运行后自动填充</div></div>' : viralContentCards.map(v => `
           <div class="viral-card">
             <h4>${v.title}</h4>
             <div class="viral-meta">
@@ -785,9 +796,9 @@ const App = {
       idea: { text: '构思中', class: 'idea' }
     };
     container.innerHTML = `
-      <div style="padding: 20px 28px;">
+      <div class="resp-section">
         <div class="card-grid">
-          ${topicIdeas.map(t => `
+          ${topicIdeas.length === 0 ? '<div style="text-align:center; padding:60px 20px; color:var(--color-text-secondary);"><div style="font-size:48px; margin-bottom:16px; opacity:0.3;">📭</div><div style="font-size:15px; margin-bottom:8px;">暂无选题内容</div><div style="font-size:13px; opacity:0.7;">数据将在自动化任务运行后自动填充</div></div>' : topicIdeas.map(t => `
             <div class="content-card">
               <div class="card-header">
                 <div class="card-title">${t.title}</div>
@@ -835,8 +846,13 @@ const App = {
       accounts = accounts.filter(a => a.platform === this.state.selectedPlatform);
     }
 
+    if (accounts.length === 0) {
+      container.innerHTML = '<div style="text-align:center; padding:60px 20px; color:var(--color-text-secondary);"><div style="font-size:48px; margin-bottom:16px; opacity:0.3;">📭</div><div style="font-size:15px; margin-bottom:8px;">暂无对标账号</div><div style="font-size:13px; opacity:0.7;">数据将在自动化任务运行后自动填充</div></div>';
+      return;
+    }
+
     container.innerHTML = `
-      <div style="padding: 20px 28px;">
+      <div class="resp-section">
         ${accounts.map(a => `
           <div class="benchmark-card">
             <div class="benchmark-card-header">
@@ -884,8 +900,15 @@ const App = {
    */
   renderDiagnostic() {
     const container = document.getElementById('social-diagnostic');
+    if (!container) return;
+
+    if (!diagnosticData.summary) {
+      container.innerHTML = '<div style="text-align:center; padding:60px 20px; color:var(--color-text-secondary);"><div style="font-size:48px; margin-bottom:16px; opacity:0.3;">📭</div><div style="font-size:15px; margin-bottom:8px;">暂无诊断数据</div><div style="font-size:13px; opacity:0.7;">数据将在自动化任务运行后自动填充</div></div>';
+      return;
+    }
+
     container.innerHTML = `
-      <div style="padding: 20px 28px;">
+      <div class="resp-section">
         <div style="margin-bottom: 16px;">
           <h3 style="font-size: 16px; margin-bottom: 4px;">本周数据复盘</h3>
           <p style="font-size: 13px; color: var(--color-text-secondary);">${diagnosticData.weekRange}</p>
@@ -918,26 +941,28 @@ const App = {
         </div>
 
         <h3 style="font-size: 15px; margin: 20px 0 12px;">平台数据对比</h3>
-        <table class="follow-table" style="margin-bottom: 24px;">
-          <thead>
-            <tr>
-              <th>平台</th>
-              <th>播放量</th>
-              <th>点赞数</th>
-              <th>新增粉丝</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${diagnosticData.platformBreakdown.map(p => `
+        <div class="table-scroll-wrap">
+          <table class="follow-table" style="margin-bottom: 0;">
+            <thead>
               <tr>
-                <td><strong>${p.platform}</strong></td>
-                <td>${p.views.toLocaleString()}</td>
-                <td>${p.likes.toLocaleString()}</td>
-                <td style="color: var(--color-success)">${p.followers}</td>
+                <th>平台</th>
+                <th>播放量</th>
+                <th>点赞数</th>
+                <th>新增粉丝</th>
               </tr>
-            `).join('')}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              ${diagnosticData.platformBreakdown.map(p => `
+                <tr>
+                  <td><strong>${p.platform}</strong></td>
+                  <td>${p.views.toLocaleString()}</td>
+                  <td>${p.likes.toLocaleString()}</td>
+                  <td style="color: var(--color-success)">${p.followers}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
 
         <h3 style="font-size: 15px; margin: 20px 0 12px;">优化建议</h3>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
@@ -961,8 +986,8 @@ const App = {
     if (!container) return;
 
     const data = (typeof SOCIAL_TRACK_HEAT !== 'undefined') ? SOCIAL_TRACK_HEAT : null;
-    if (!data) {
-      container.innerHTML = '<div style="padding: 40px; text-align: center; color: var(--color-text-secondary);">赛道热度数据加载失败</div>';
+    if (!data || !data.overview) {
+      container.innerHTML = '<div style="text-align:center; padding:60px 20px; color:var(--color-text-secondary);"><div style="font-size:48px; margin-bottom:16px; opacity:0.3;">📭</div><div style="font-size:15px; margin-bottom:8px;">暂无赛道热度数据</div><div style="font-size:13px; opacity:0.7;">数据将在自动化任务运行后自动填充</div></div>';
       return;
     }
 
@@ -981,7 +1006,7 @@ const App = {
     };
 
     container.innerHTML = `
-      <div style="padding: 20px 28px;">
+      <div class="resp-section">
         <!-- 标题 -->
         <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px;">
           <span style="font-size: 22px;">🔥</span>
@@ -1018,7 +1043,7 @@ const App = {
         <!-- 赛道详情卡片 -->
         <div style="background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 12px; padding: 18px; margin-bottom: 20px;">
           <div style="font-size: 14px; font-weight: 600; color: var(--color-primary); margin-bottom: 14px;">📋 各赛道热度详情</div>
-          <div style="overflow-x: auto;">
+          <div class="table-scroll-wrap">
             <table class="follow-table" style="width: 100%; font-size: 12px;">
               <thead>
                 <tr>
@@ -1139,8 +1164,12 @@ const App = {
    */
   renderPlatformRules() {
     const container = document.getElementById('social-rules');
+    if (platformRules.length === 0) {
+      container.innerHTML = '<div style="text-align:center; padding:60px 20px; color:var(--color-text-secondary);"><div style="font-size:48px; margin-bottom:16px; opacity:0.3;">📭</div><div style="font-size:15px; margin-bottom:8px;">暂无平台规则</div><div style="font-size:13px; opacity:0.7;">数据将在自动化任务运行后自动填充</div></div>';
+      return;
+    }
     container.innerHTML = `
-      <div style="padding: 20px 28px;">
+      <div class="resp-section">
         ${platformRules.map(r => `
           <div class="rule-card impact-${r.impact === '高' ? 'high' : r.impact === '低' ? 'low' : 'mid'}">
             <div class="rule-card-header">
@@ -1363,7 +1392,7 @@ const App = {
     };
 
     container.innerHTML = `
-      <div style="padding: 20px 28px;">
+      <div class="resp-section">
         ${communityCards.map(c => `
           <div class="community-card-large">
             <div class="community-card-header">
@@ -1439,7 +1468,7 @@ const App = {
     };
 
     container.innerHTML = `
-      <div style="padding: 20px 28px;">
+      <div class="resp-section">
         <div class="onboarding-timeline">
           ${onboardingData.map(o => `
             <div class="onboarding-item">
@@ -1470,20 +1499,21 @@ const App = {
     };
 
     container.innerHTML = `
-      <div style="padding: 20px 28px;">
-        <table class="follow-table">
-          <thead>
-            <tr>
-              <th>会员</th>
-              <th>状态</th>
-              <th>最近下单</th>
-              <th>本月点数</th>
-              <th>提醒</th>
-              <th>操作</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${consumptionFollowData.map(c => `
+      <div class="resp-section">
+        <div class="table-scroll-wrap">
+          <table class="follow-table">
+            <thead>
+              <tr>
+                <th>会员</th>
+                <th>状态</th>
+                <th>最近下单</th>
+                <th>本月点数</th>
+                <th>提醒</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${consumptionFollowData.map(c => `
               <tr>
                 <td><strong>${c.member}</strong></td>
                 <td><span class="status-badge ${statusClass[c.status]}">${c.status}</span></td>
@@ -1496,8 +1526,9 @@ const App = {
                 </td>
               </tr>
             `).join('')}
-          </tbody>
-        </table>
+            </tbody>
+          </table>
+        </div>
       </div>
     `;
   },
@@ -1523,7 +1554,7 @@ const App = {
             </div>
           `).join('')}
         </div>
-        <div style="margin-top: 32px; text-align: center; padding: 16px; background: var(--color-card); border-radius: 8px; max-width: 600px; margin-left: auto; margin-right: auto;">
+        <div style="margin-top: 32px; text-align: center; padding: 16px; background: var(--color-card); border-radius: 8px; max-width: 100%; margin-left: auto; margin-right: auto;">
           <div style="font-size: 13px; color: var(--color-text-secondary);">整体转化率（公域关注 → 会员）</div>
           <div style="font-size: 28px; font-weight: 700; color: var(--color-accent); margin: 8px 0;">4.03%</div>
           <div style="font-size: 12px; color: var(--color-text-secondary);">高于行业平均水平（2.5%）</div>
@@ -1540,7 +1571,7 @@ const App = {
     if (!container) return;
 
     container.innerHTML = `
-      <div style="padding: 20px 28px;">
+      <div class="resp-section">
         ${architectureData.map(a => `
           <div class="arch-card">
             <div class="arch-card-header">
@@ -2052,7 +2083,7 @@ const App = {
     const myCourses = this._getMyCourses(userRole, isSDPlus);
 
     container.innerHTML = `
-      <div style="padding: 20px 28px;">
+      <div class="resp-section">
         <!-- 我正在学的课 -->
         ${myCourses.length > 0 ? `
           <div style="margin-bottom: 28px;">
@@ -2253,7 +2284,7 @@ const App = {
     };
 
     container.innerHTML = `
-      <div style="padding: 20px 28px;">
+      <div class="resp-section">
         <div class="card-grid">
           ${trainingCourses.map(c => `
             <div class="content-card">
@@ -2398,7 +2429,7 @@ const App = {
       ? dashboardMetricsByRole.admin
       : dashboardMetrics;
     container.innerHTML = `
-      <div style="padding: 20px 28px;">
+      <div class="resp-section">
         <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 16px;">
           <span style="font-size: 22px;">🏛️</span>
           <div>
@@ -2449,7 +2480,7 @@ const App = {
       { icon: '🔥', value: '3', title: '爆款内容数', change: '持平', changeType: 'neutral' }
     ];
     container.innerHTML = `
-      <div style="padding: 20px 28px;">
+      <div class="resp-section">
         <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 16px;">
           <span style="font-size: 22px;">📱</span>
           <div>
@@ -2498,7 +2529,7 @@ const App = {
       { icon: '⭐', value: '4.8', title: '社群满意度', change: '+0.1↑', changeType: 'up' }
     ];
     container.innerHTML = `
-      <div style="padding: 20px 28px;">
+      <div class="resp-section">
         <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 16px;">
           <span style="font-size: 22px;">💬</span>
           <div>
@@ -2547,7 +2578,7 @@ const App = {
       { icon: '⭐', value: '4.7', title: '活动满意度', change: '+0.2↑', changeType: 'up' }
     ];
     container.innerHTML = `
-      <div style="padding: 20px 28px;">
+      <div class="resp-section">
         <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 16px;">
           <span style="font-size: 22px;">🎪</span>
           <div>
@@ -2588,7 +2619,7 @@ const App = {
   /* --- 运营中枢专员看板 --- */
   renderHubStaffDashboard(container) {
     const metrics = [
-      { icon: '🏠', value: '21', title: '运行中自动化任务', change: '持平', changeType: 'neutral' },
+      { icon: '🏠', value: '13', title: '运行中自动化任务', change: '持平', changeType: 'neutral' },
       { icon: '📊', value: '300', title: '本月总流量池', change: '+15↑', changeType: 'up' },
       { icon: '👥', value: '6', title: '在岗经营者数', change: '+1↑', changeType: 'up' },
       { icon: '📈', value: '94.5%', title: '系统分配完成率', change: '+0.5%↑', changeType: 'up' },
@@ -2596,7 +2627,7 @@ const App = {
       { icon: '💰', value: '¥8.2K', title: '本月社群收入', change: '+¥1.2K↑', changeType: 'up' }
     ];
     container.innerHTML = `
-      <div style="padding: 20px 28px;">
+      <div class="resp-section">
         <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 16px;">
           <span style="font-size: 22px;">🏠</span>
           <div>
@@ -2643,7 +2674,7 @@ const App = {
          { icon: '📈', value: '12%', title: '市场月增长', change: '+2%', changeType: 'positive' },
          { icon: '🌱', value: '3', title: '新经营者', change: '+1', changeType: 'positive' }];
     container.innerHTML = `
-      <div style="padding: 20px 28px;">
+      <div class="resp-section">
         <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 16px;">
           <span style="font-size: 22px;">📊</span>
           <div>
@@ -2693,7 +2724,7 @@ const App = {
       ? dashboardMetricsByRole.blogger_lead
       : dashboardMetricsByRole.blogger || [];
     container.innerHTML = `
-      <div style="padding: 20px 28px;">
+      <div class="resp-section">
         <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 16px;">
           <span style="font-size: 22px;">📱</span>
           <div>
@@ -2729,7 +2760,7 @@ const App = {
       ? dashboardMetricsByRole.community_lead
       : dashboardMetricsByRole.community || [];
     container.innerHTML = `
-      <div style="padding: 20px 28px;">
+      <div class="resp-section">
         <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 16px;">
           <span style="font-size: 22px;">💬</span>
           <div>
@@ -2764,7 +2795,7 @@ const App = {
       ? dashboardMetricsByRole.offline_lead
       : dashboardMetricsByRole.offline || [];
     container.innerHTML = `
-      <div style="padding: 20px 28px;">
+      <div class="resp-section">
         <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 16px;">
           <span style="font-size: 22px;">🎪</span>
           <div>
@@ -2801,7 +2832,7 @@ const App = {
          { icon: '🎯', value: '45', title: '体验场次', change: '+5', changeType: 'positive' },
          { icon: '📈', value: '35%', title: '购买转化', change: '+2%', changeType: 'positive' }];
     container.innerHTML = `
-      <div style="padding: 20px 28px;">
+      <div class="resp-section">
         <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 16px;">
           <span style="font-size: 22px;">🏠</span>
           <div>
@@ -2838,7 +2869,7 @@ const App = {
          { icon: '✅', value: '92%', title: '完成率', change: '+3%', changeType: 'positive' },
          { icon: '⭐', value: 'B', title: '贡献评级', change: '→B', changeType: 'stable' }];
     container.innerHTML = `
-      <div style="padding: 20px 28px;">
+      <div class="resp-section">
         <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 16px;">
           <span style="font-size: 22px;">🏠</span>
           <div>
@@ -2876,7 +2907,7 @@ const App = {
          { icon: '➕', value: '3', title: '本月新增', change: '+1', changeType: 'positive' },
          { icon: '📊', value: '85%', title: '培训覆盖率', change: '+5%', changeType: 'positive' }];
     container.innerHTML = `
-      <div style="padding: 20px 28px;">
+      <div class="resp-section">
         <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 16px;">
           <span style="font-size: 22px;">📚</span>
           <div>
@@ -2914,7 +2945,7 @@ const App = {
          { icon: '🎯', value: '45', title: '体验场次', change: '+5', changeType: 'positive' },
          { icon: '📈', value: '35%', title: '购买转化', change: '+2%', changeType: 'positive' }];
     container.innerHTML = `
-      <div style="padding: 20px 28px;">
+      <div class="resp-section">
         <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 16px;">
           <span style="font-size: 22px;">🏠</span>
           <div>
@@ -2950,7 +2981,7 @@ const App = {
     const container = document.getElementById('hub-automation');
     if (!container) return;
 
-    // V4.5：修复缺失 status → 加入 active，并提供兜底避免 undefined 访问 .class
+    // V5.0：同步真实定时任务，按平台分组展示
     const statusMap = {
       running: { text: '运行中', class: 'running' },
       paused:  { text: '已暂停', class: 'paused' },
@@ -2960,6 +2991,13 @@ const App = {
       completed: { text: '已完成', class: 'completed' }
     };
     const FALLBACK = { text: '未知', class: 'pending' };
+
+    // 平台配置：图标、品牌色
+    const platformConfig = {
+      '小红书': { icon: '📕', color: '#FF2442', label: '小红书' },
+      '抖音':   { icon: '🎵', color: '#161823', label: '抖音' },
+      'B站':    { icon: '📺', color: '#FB7299', label: 'B站' }
+    };
 
     // 按角色过滤自动化任务
     const userDomain = (typeof Auth !== 'undefined' && Auth.getDomain) ? Auth.getDomain() : null;
@@ -2975,32 +3013,88 @@ const App = {
       });
     }
 
+    // 按平台分组
+    const platformOrder = ['小红书', '抖音', 'B站'];
+    const grouped = {};
+    platformOrder.forEach(p => { grouped[p] = []; });
+    filteredTasks.forEach(t => {
+      const p = t.platform || '其他';
+      if (!grouped[p]) grouped[p] = [];
+      grouped[p].push(t);
+    });
+
+    // 统计概览
+    const totalTasks = filteredTasks.length;
+    const runningCount = filteredTasks.filter(t => t.status === 'running' || t.status === 'active').length;
+    const dailyCount = filteredTasks.filter(t => t.taskType === 'daily').length;
+    const weeklyCount = filteredTasks.filter(t => t.taskType === 'weekly').length;
+
+    // 渲染单张任务卡片
+    const renderTaskCard = (t) => {
+      const s = statusMap[t.status] || FALLBACK;
+      const pc = platformConfig[t.platform] || { icon: '📋', color: '#666', label: t.platform || '其他' };
+      return `
+      <div class="arch-card">
+        <div class="arch-card-header">
+          <h3>${t.name}</h3>
+          <span class="status-badge ${s.class}">${s.text}</span>
+        </div>
+        ${t.desc ? `<p style="margin:4px 0 8px; font-size:13px; color:var(--color-text-secondary); line-height:1.5;">${t.desc}</p>` : ''}
+        <div class="arch-meta">
+          <span style="color:${pc.color}; font-weight:600;">${pc.icon} ${pc.label}</span>
+          <span>⏰ ${t.schedule}</span>
+          <span>📋 上次: ${t.lastRun}</span>
+          <span>🔄 下次: ${t.nextRun}</span>
+        </div>
+        <div style="margin-top: 10px;">
+          ${t.status === 'running' || t.status === 'active' ? `<button class="card-action-btn" onclick="App.showToast('已暂停任务')">⏸ 暂停</button>` : ''}
+          ${t.status === 'paused' || t.status === 'pending' ? `<button class="card-action-btn primary" onclick="App.showToast('已启动任务')">▶ 启动</button>` : ''}
+          ${t.status === 'error' ? `<button class="card-action-btn primary" onclick="App.showToast('已重试任务')">🔄 重试</button>` : ''}
+          <button class="card-action-btn" onclick="App.showToast('查看运行日志')">📋 日志</button>
+          <button class="card-action-btn" onclick="App.showToast('已复制任务配置')">⚙️ 配置</button>
+        </div>
+      </div>
+    `;};
+
     container.innerHTML = `
-      <div style="padding: 20px 28px;">
-        ${filteredTasks.length === 0 ? '<div style="text-align:center; padding:40px; color:var(--color-text-secondary);">暂无相关自动化任务</div>' : ''}
-        ${filteredTasks.map(t => {
-          const s = statusMap[t.status] || FALLBACK;
-          return `
-          <div class="arch-card">
-            <div class="arch-card-header">
-              <h3>${t.name}</h3>
-              <span class="status-badge ${s.class}">${s.text}</span>
-            </div>
-            <div class="arch-meta">
-              <span>⏰ ${t.schedule}</span>
-              <span>🎯 ${t.target}</span>
-              <span>📋 上次: ${t.lastRun}</span>
-              <span>🔄 下次: ${t.nextRun}</span>
-            </div>
-            <div style="margin-top: 10px;">
-              ${t.status === 'running' || t.status === 'active' ? `<button class="card-action-btn" onclick="App.showToast('已暂停任务')">⏸ 暂停</button>` : ''}
-              ${t.status === 'paused' || t.status === 'pending' ? `<button class="card-action-btn primary" onclick="App.showToast('已启动任务')">▶ 启动</button>` : ''}
-              ${t.status === 'error' ? `<button class="card-action-btn primary" onclick="App.showToast('已重试任务')">🔄 重试</button>` : ''}
-              <button class="card-action-btn" onclick="App.showToast('查看运行日志')">📋 日志</button>
-              <button class="card-action-btn" onclick="App.showToast('已复制任务配置')">⚙️ 配置</button>
-            </div>
+      <div class="resp-section">
+        ${filteredTasks.length === 0 ? '<div style="text-align:center; padding:40px; color:var(--color-text-secondary);">暂无相关自动化任务</div>' : `
+        <!-- 统计概览 -->
+        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:12px; margin-bottom:20px;">
+          <div style="background:var(--color-bg-card); border-radius:12px; padding:16px; text-align:center; border:1px solid var(--color-border);">
+            <div style="font-size:24px; font-weight:700; color:var(--color-primary);">${totalTasks}</div>
+            <div style="font-size:12px; color:var(--color-text-secondary); margin-top:4px;">任务总数</div>
           </div>
-        `;}).join('')}
+          <div style="background:var(--color-bg-card); border-radius:12px; padding:16px; text-align:center; border:1px solid var(--color-border);">
+            <div style="font-size:24px; font-weight:700; color:#4CAF50;">${runningCount}</div>
+            <div style="font-size:12px; color:var(--color-text-secondary); margin-top:4px;">运行中</div>
+          </div>
+          <div style="background:var(--color-bg-card); border-radius:12px; padding:16px; text-align:center; border:1px solid var(--color-border);">
+            <div style="font-size:24px; font-weight:700; color:#2196F3;">${dailyCount}</div>
+            <div style="font-size:12px; color:var(--color-text-secondary); margin-top:4px;">每日任务</div>
+          </div>
+          <div style="background:var(--color-bg-card); border-radius:12px; padding:16px; text-align:center; border:1px solid var(--color-border);">
+            <div style="font-size:24px; font-weight:700; color:#FF9800;">${weeklyCount}</div>
+            <div style="font-size:12px; color:var(--color-text-secondary); margin-top:4px;">每周任务</div>
+          </div>
+        </div>
+
+        ${platformOrder.map(p => {
+          if (!grouped[p] || grouped[p].length === 0) return '';
+          const pc = platformConfig[p];
+          return `
+            <div style="margin-bottom:24px;">
+              <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px; padding-bottom:8px; border-bottom:2px solid ${pc.color}33;">
+                <span style="font-size:18px;">${pc.icon}</span>
+                <h3 style="margin:0; font-size:16px; font-weight:600; color:${pc.color};">${pc.label} · ${grouped[p].length}个任务</h3>
+              </div>
+              <div class="arch-grid" style="display:grid; grid-template-columns:repeat(auto-fill,minmax(340px,1fr)); gap:16px;">
+                ${grouped[p].map(renderTaskCard).join('')}
+              </div>
+            </div>
+          `;
+        }).join('')}
+        `}
       </div>
     `;
   },
@@ -3060,7 +3154,7 @@ const App = {
     const c = gradeColors[myTraffic.grade];
 
     container.innerHTML = `
-      <div style="padding: 20px 28px;">
+      <div class="resp-section">
         <!-- V4.2 第二阶段：视图切换器（仅 admin/SD+/hub 可见） -->
         ${canViewGlobal ? `
           <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 16px; padding: 8px 12px; background: var(--color-surface); border-radius: 8px; border: 1px solid var(--color-border);">
@@ -3168,7 +3262,7 @@ const App = {
     const momPercent = ov.lastMonthTotal > 0 ? ((momChange / ov.lastMonthTotal) * 100).toFixed(1) : 0;
 
     container.innerHTML = `
-      <div style="padding: 20px 28px;">
+      <div class="resp-section">
         <!-- 视图切换器 -->
         <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 16px; padding: 8px 12px; background: var(--color-surface); border-radius: 8px; border: 1px solid var(--color-border);">
           <span style="font-size: 12px; font-weight: 600; color: var(--color-text-secondary);">视图：</span>
@@ -3270,7 +3364,8 @@ const App = {
         <!-- 3. 各团队流量分配对比表 -->
         <div style="background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 12px; padding: 18px; margin-bottom: 20px;">
           <div style="font-size: 14px; font-weight: 600; color: var(--color-primary); margin-bottom: 14px;">📋 各团队流量分配对比</div>
-          <table class="follow-table" style="width: 100%; font-size: 12px;">
+          <div class="table-scroll-wrap">
+            <table class="follow-table" style="width: 100%; font-size: 12px;">
             <thead>
               <tr>
                 <th style="text-align: left; padding: 8px;">团队</th>
@@ -3324,7 +3419,8 @@ const App = {
                 <td style="padding: 8px; text-align: center;" colspan="3">平均利用率 ${(teams.reduce((s, t) => s + t.utilization, 0) / teams.length).toFixed(1)}%</td>
               </tr>
             </tfoot>
-          </table>
+            </table>
+          </div>
         </div>
 
         <!-- 4. 异常预警 -->
@@ -3365,7 +3461,7 @@ const App = {
     };
 
     container.innerHTML = `
-      <div style="padding: 20px 28px;">
+      <div class="resp-section">
         <div class="card-grid">
           ${monthlyReviews.map(r => `
             <div class="content-card">
@@ -3403,7 +3499,7 @@ const App = {
     };
 
     container.innerHTML = `
-      <div style="padding: 20px 28px;">
+      <div class="resp-section">
         ${complianceItems.map(c => `
           <div class="arch-card">
             <div class="arch-card-header">
@@ -3444,7 +3540,7 @@ const App = {
     if (!container) return;
 
     container.innerHTML = `
-      <div style="padding: 20px 28px;">
+      <div class="resp-section">
         <div style="margin-bottom: 20px;">
           <h3 style="font-size: 16px; margin-bottom: 12px;">📚 知识库分类（共 ${knowledgeBase.totalItems} 条）</h3>
           <div class="kb-categories">
@@ -3495,7 +3591,7 @@ const App = {
     };
 
     container.innerHTML = `
-      <div style="padding: 20px 28px;">
+      <div class="resp-section">
         <div class="card-grid">
           ${cwFrameworkData.map(f => {
             const progress = Math.round(f.completedCourses / f.totalCourses * 100);
@@ -3547,7 +3643,7 @@ const App = {
     };
 
     container.innerHTML = `
-      <div style="padding: 20px 28px;">
+      <div class="resp-section">
         <div class="card-grid">
           ${cwScriptData.map(s => `
             <div class="content-card">
@@ -3589,7 +3685,7 @@ const App = {
     };
 
     container.innerHTML = `
-      <div style="padding: 20px 28px;">
+      <div class="resp-section">
         <div class="card-grid">
           ${cwOutlineData.map(o => `
             <div class="content-card">
@@ -3631,7 +3727,7 @@ const App = {
     };
 
     container.innerHTML = `
-      <div style="padding: 20px 28px;">
+      <div class="resp-section">
         <div class="card-grid">
           ${cwFulltextData.map(f => `
             <div class="content-card">
@@ -3668,7 +3764,7 @@ const App = {
     if (!container) return;
 
     container.innerHTML = `
-      <div style="padding: 20px 28px;">
+      <div class="resp-section">
         <div style="margin-bottom: 20px;">
           <h3 style="font-size: 16px; margin-bottom: 12px;">📦 素材分类（共 ${cwMaterialsData.totalItems} 项）</h3>
           <div class="kb-categories">
@@ -3721,7 +3817,7 @@ const App = {
     };
 
     container.innerHTML = `
-      <div style="padding: 20px 28px;">
+      <div class="resp-section">
         <div class="card-grid">
           ${salonActivities.map(s => `
             <div class="content-card">
@@ -3764,7 +3860,7 @@ const App = {
     const m = expCenterData.metrics;
 
     container.innerHTML = `
-      <div style="padding: 20px 28px;">
+      <div class="resp-section">
         <div class="arch-card" style="margin-bottom: 20px;">
           <div class="arch-card-header">
             <h3>${info.name}</h3>
@@ -3799,22 +3895,24 @@ const App = {
         </div>
 
         <h3 style="font-size: 15px; margin-bottom: 12px;">📅 近期活动安排</h3>
-        <table class="follow-table">
-          <thead>
-            <tr><th>日期</th><th>活动</th><th>区域</th><th>时间</th><th>状态</th></tr>
-          </thead>
-          <tbody>
-            ${expCenterData.schedule.map(s => `
-              <tr>
-                <td><strong>${s.date}</strong></td>
-                <td>${s.event}</td>
-                <td>${s.zone}</td>
-                <td>${s.time}</td>
-                <td><span class="status-badge upcoming">即将开始</span></td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
+        <div class="table-scroll-wrap">
+          <table class="follow-table">
+            <thead>
+              <tr><th>日期</th><th>活动</th><th>区域</th><th>时间</th><th>状态</th></tr>
+            </thead>
+            <tbody>
+              ${expCenterData.schedule.map(s => `
+                <tr>
+                  <td><strong>${s.date}</strong></td>
+                  <td>${s.event}</td>
+                  <td>${s.zone}</td>
+                  <td>${s.time}</td>
+                  <td><span class="status-badge upcoming">即将开始</span></td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
       </div>
     `;
   },
@@ -3833,7 +3931,7 @@ const App = {
     };
 
     container.innerHTML = `
-      <div style="padding: 20px 28px;">
+      <div class="resp-section">
         <div class="card-grid">
           ${communityActivities.map(c => `
             <div class="content-card">
@@ -3876,7 +3974,7 @@ const App = {
     };
 
     container.innerHTML = `
-      <div style="padding: 20px 28px;">
+      <div class="resp-section">
         ${materialsChecklist.map(m => `
           <div class="arch-card">
             <div class="arch-card-header">
@@ -3910,7 +4008,7 @@ const App = {
     if (!container) return;
 
     container.innerHTML = `
-      <div style="padding: 20px 28px;">
+      <div class="resp-section">
         ${reviewRecords.map(r => `
           <div class="arch-card">
             <div class="arch-card-header">
@@ -3959,42 +4057,44 @@ const App = {
     };
 
     container.innerHTML = `
-      <div style="padding: 20px 28px;">
-        <table class="follow-table">
-          <thead>
-            <tr>
-              <th>考核名称</th>
-              <th>级别</th>
-              <th>题数</th>
-              <th>及格分</th>
-              <th>参考人数</th>
-              <th>通过人数</th>
-              <th>通过率</th>
-              <th>最近考试</th>
-              <th>状态</th>
-              <th>操作</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${examData.map(e => `
+      <div class="resp-section">
+        <div class="table-scroll-wrap">
+          <table class="follow-table">
+            <thead>
               <tr>
-                <td><strong>${e.title}</strong></td>
-                <td>${e.level}</td>
-                <td>${e.totalQuestions}题</td>
-                <td>${e.passingScore}分</td>
-                <td>${e.examinees}</td>
-                <td style="color: var(--color-success)">${e.passed}</td>
-                <td><strong style="color: ${parseInt(e.passRate) >= 80 ? 'var(--color-success)' : 'var(--color-warning)'}">${e.passRate}</strong></td>
-                <td>${e.lastDate}</td>
-                <td><span class="status-badge ${statusMap[e.status].class}">${statusMap[e.status].text}</span></td>
-                <td>
-                  <button class="card-action-btn" onclick="App.showToast('查看考核详情')">详情</button>
-                  ${e.status === 'upcoming' ? `<button class="card-action-btn primary" onclick="App.showToast('已复制试卷生成提示词')">出试卷</button>` : ''}
-                </td>
+                <th>考核名称</th>
+                <th>级别</th>
+                <th>题数</th>
+                <th>及格分</th>
+                <th>参考人数</th>
+                <th>通过人数</th>
+                <th>通过率</th>
+                <th>最近考试</th>
+                <th>状态</th>
+                <th>操作</th>
               </tr>
-            `).join('')}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              ${examData.map(e => `
+                <tr>
+                  <td><strong>${e.title}</strong></td>
+                  <td>${e.level}</td>
+                  <td>${e.totalQuestions}题</td>
+                  <td>${e.passingScore}分</td>
+                  <td>${e.examinees}</td>
+                  <td style="color: var(--color-success)">${e.passed}</td>
+                  <td><strong style="color: ${parseInt(e.passRate) >= 80 ? 'var(--color-success)' : 'var(--color-warning)'}">${e.passRate}</strong></td>
+                  <td>${e.lastDate}</td>
+                  <td><span class="status-badge ${statusMap[e.status].class}">${statusMap[e.status].text}</span></td>
+                  <td>
+                    <button class="card-action-btn" onclick="App.showToast('查看考核详情')">详情</button>
+                    ${e.status === 'upcoming' ? `<button class="card-action-btn primary" onclick="App.showToast('已复制试卷生成提示词')">出试卷</button>` : ''}
+                  </td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
       </div>
     `;
   },
@@ -4052,7 +4152,7 @@ const App = {
     };
 
     container.innerHTML = `
-      <div style="padding: 20px 28px;">
+      <div class="resp-section">
         <!-- 顶部统计概览 -->
         <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px;">
           <div style="background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 10px; padding: 14px 16px; border-left: 4px solid var(--color-primary);">
@@ -4394,7 +4494,7 @@ const App = {
       (Auth.isAdmin() || Auth.currentUser.isLead || Auth.currentUser.isSDPlus);
 
     container.innerHTML = `
-      <div style="padding: 20px 28px;">
+      <div class="resp-section">
         <!-- 顶部统计概览 -->
         <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px;">
           <div style="background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 10px; padding: 14px 16px; border-left: 4px solid var(--color-primary);">
@@ -4764,7 +4864,7 @@ const App = {
     };
 
     container.innerHTML = `
-      <div style="padding: 20px 28px;">
+      <div class="resp-section">
         <div class="card-grid">
           ${teamBuildingData.map(t => `
             <div class="content-card">
@@ -4801,7 +4901,7 @@ const App = {
     if (!container) return;
 
     container.innerHTML = `
-      <div style="padding: 20px 28px;">
+      <div class="resp-section">
         <div class="quick-actions">
           <div class="primary-action">
             <div class="primary-action-info">
@@ -4851,39 +4951,41 @@ const App = {
     if (!container) return;
 
     container.innerHTML = `
-      <div style="padding: 20px 28px;">
-        <table class="follow-table">
-          <thead>
-            <tr>
-              <th>课程名称</th>
-              <th>日期</th>
-              <th>时间</th>
-              <th>级别</th>
-              <th>地点</th>
-              <th>讲师</th>
-              <th>报名人数</th>
-              <th>操作</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${trainingCalendarData.map(t => `
+      <div class="resp-section">
+        <div class="table-scroll-wrap">
+          <table class="follow-table">
+            <thead>
               <tr>
-                <td><strong>${t.title}</strong></td>
-                <td>${t.date}</td>
-                <td>${t.time}</td>
-                <td><span class="card-tag">#${t.level}</span></td>
-                <td>${t.location}</td>
-                <td>${t.instructor}</td>
-                <td>${t.attendees}</td>
-                <td>
-                  <button class="card-action-btn primary" onclick="App.showToast('查看课程详情')">详情</button>
-                  <button class="card-action-btn" onclick="App.showToast('已复制课程大纲')">大纲</button>
-                  <button class="card-action-btn" onclick="App.showToast('已复制报名链接')">报名</button>
-                </td>
+                <th>课程名称</th>
+                <th>日期</th>
+                <th>时间</th>
+                <th>级别</th>
+                <th>地点</th>
+                <th>讲师</th>
+                <th>报名人数</th>
+                <th>操作</th>
               </tr>
-            `).join('')}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              ${trainingCalendarData.map(t => `
+                <tr>
+                  <td><strong>${t.title}</strong></td>
+                  <td>${t.date}</td>
+                  <td>${t.time}</td>
+                  <td><span class="card-tag">#${t.level}</span></td>
+                  <td>${t.location}</td>
+                  <td>${t.instructor}</td>
+                  <td>${t.attendees}</td>
+                  <td>
+                    <button class="card-action-btn primary" onclick="App.showToast('查看课程详情')">详情</button>
+                    <button class="card-action-btn" onclick="App.showToast('已复制课程大纲')">大纲</button>
+                    <button class="card-action-btn" onclick="App.showToast('已复制报名链接')">报名</button>
+                  </td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
       </div>
     `;
   },
@@ -4897,7 +4999,7 @@ const App = {
     const s = systemSettings;
 
     container.innerHTML = `
-      <div style="padding: 20px 28px;">
+      <div class="resp-section">
         <div class="arch-card" style="margin-bottom: 16px;">
           <div class="arch-card-header">
             <h3>⚙️ 通用设置</h3>
@@ -5012,7 +5114,7 @@ const App = {
     };
 
     container.innerHTML = `
-      <div style="padding: 20px 28px;">
+      <div class="resp-section">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
           <div>
             <div style="font-size: 16px; font-weight: 700; color: var(--color-primary);">
@@ -5079,43 +5181,45 @@ const App = {
     if (exportBtn) exportBtn.style.display = canManage ? '' : 'none';
 
     container.innerHTML = `
-      <div style="padding: 20px 28px;">
-        <table class="follow-table">
-          <thead>
-            <tr>
-              <th>成员</th>
-              <th>角色</th>
-              <th>团队</th>
-              <th>阶衔</th>
-              <th>贡献评级</th>
-              <th>状态</th>
-              <th>操作</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${(typeof teamMembers !== 'undefined' ? teamMembers : [
-              { name: '小王', role: '内容策划', team: '自媒体·营养学', rank: 'D5', grade: 'A', status: '活跃' },
-              { name: '小李', role: '视频剪辑', team: '自媒体·营养学', rank: 'D3', grade: 'B', status: '活跃' },
-              { name: '小赵', role: '内容运营', team: '社群运营·L1训练营', rank: 'D5', grade: 'A', status: '活跃' },
-              { name: '小钱', role: '互动引导', team: '社群运营·L1训练营', rank: 'D3', grade: 'B', status: '活跃' },
-              { name: '小孙', role: '活动策划', team: '线下活动·体验馆A', rank: 'D8', grade: 'A', status: '活跃' },
-              { name: '小周', role: '执行统筹', team: '线下活动·体验馆A', rank: 'D5', grade: 'B', status: '活跃' }
-            ]).map(m => `
+      <div class="resp-section">
+        <div class="table-scroll-wrap">
+          <table class="follow-table">
+            <thead>
               <tr>
-                <td><strong>${m.name}</strong></td>
-                <td><span class="card-tag">#${m.role}</span></td>
-                <td>${m.team}</td>
-                <td><span class="card-tag">${m.rank}</span></td>
-                <td><span style="display:inline-block;width:24px;height:24px;line-height:24px;text-align:center;border-radius:50%;background:${m.grade === 'A' ? '#4CAF50' : m.grade === 'B' ? '#2196F3' : '#FF9800'}20;color:${m.grade === 'A' ? '#4CAF50' : m.grade === 'B' ? '#2196F3' : '#FF9800'};font-weight:700;">${m.grade}</span></td>
-                <td><span class="status-badge active">${m.status}</span></td>
-                <td>
-                  ${canManage ? `<button class="card-action-btn primary" onclick="App.showToast('编辑成员权限')">权限</button>` : ''}
-                  <button class="card-action-btn" onclick="App.showToast('查看成员详情')">详情</button>
-                </td>
+                <th>成员</th>
+                <th>角色</th>
+                <th>团队</th>
+                <th>阶衔</th>
+                <th>贡献评级</th>
+                <th>状态</th>
+                <th>操作</th>
               </tr>
-            `).join('')}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              ${(typeof teamMembers !== 'undefined' ? teamMembers : [
+                { name: '小王', role: '内容策划', team: '自媒体·营养学', rank: 'D5', grade: 'A', status: '活跃' },
+                { name: '小李', role: '视频剪辑', team: '自媒体·营养学', rank: 'D3', grade: 'B', status: '活跃' },
+                { name: '小赵', role: '内容运营', team: '社群运营·L1训练营', rank: 'D5', grade: 'A', status: '活跃' },
+                { name: '小钱', role: '互动引导', team: '社群运营·L1训练营', rank: 'D3', grade: 'B', status: '活跃' },
+                { name: '小孙', role: '活动策划', team: '线下活动·体验馆A', rank: 'D8', grade: 'A', status: '活跃' },
+                { name: '小周', role: '执行统筹', team: '线下活动·体验馆A', rank: 'D5', grade: 'B', status: '活跃' }
+              ]).map(m => `
+                <tr>
+                  <td><strong>${m.name}</strong></td>
+                  <td><span class="card-tag">#${m.role}</span></td>
+                  <td>${m.team}</td>
+                  <td><span class="card-tag">${m.rank}</span></td>
+                  <td><span style="display:inline-block;width:24px;height:24px;line-height:24px;text-align:center;border-radius:50%;background:${m.grade === 'A' ? '#4CAF50' : m.grade === 'B' ? '#2196F3' : '#FF9800'}20;color:${m.grade === 'A' ? '#4CAF50' : m.grade === 'B' ? '#2196F3' : '#FF9800'};font-weight:700;">${m.grade}</span></td>
+                  <td><span class="status-badge active">${m.status}</span></td>
+                  <td>
+                    ${canManage ? `<button class="card-action-btn primary" onclick="App.showToast('编辑成员权限')">权限</button>` : ''}
+                    <button class="card-action-btn" onclick="App.showToast('查看成员详情')">详情</button>
+                  </td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
       </div>
     `;
   },
@@ -5126,7 +5230,7 @@ const App = {
     if (!container) return;
 
     container.innerHTML = `
-      <div style="padding: 20px 28px;">
+      <div class="resp-section">
         <div class="card-grid">
           ${(typeof growthTrackingData !== 'undefined' ? growthTrackingData : [
             { name: '小王', team: '自媒体·营养学', from: 'D3', to: 'D5', progress: '80%', eta: '2026-08-15', status: 'on_track' },
@@ -5173,7 +5277,7 @@ const App = {
     }
 
     container.innerHTML = `
-      <div style="padding: 20px 28px;">
+      <div class="resp-section">
         <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px;">
           <div style="background: linear-gradient(135deg, var(--color-primary) 0%, #1a4d2e 100%); color: white; padding: 16px; border-radius: 10px; text-align: center;">
             <div style="font-size: 24px; font-weight: 700;">300</div>
@@ -5192,23 +5296,25 @@ const App = {
             <div style="font-size: 12px; color: var(--color-text-secondary);">本月新增</div>
           </div>
         </div>
-        <table class="follow-table">
-          <thead>
-            <tr><th>团队</th><th>领域</th><th>评级</th><th>分配权重</th><th>已分配</th><th>成员均分</th></tr>
-          </thead>
-          <tbody>
-            ${teamData.map(t => `
-              <tr>
-                <td><strong>${t.name}</strong></td>
-                <td><span class="card-tag">#${t.domain}</span></td>
-                <td><span style="display:inline-block;width:24px;height:24px;line-height:24px;text-align:center;border-radius:50%;background:${t.contributionLevel === 'A' ? '#4CAF5020' : t.contributionLevel === 'B' ? '#2196F320' : '#FF980020'};color:${t.contributionLevel === 'A' ? '#4CAF50' : t.contributionLevel === 'B' ? '#2196F3' : '#FF9800'};font-weight:700;">${t.contributionLevel}</span></td>
-                <td>×${t.contributionLevel === 'A' ? '1.5' : t.contributionLevel === 'B' ? '1.0' : '0.7'}</td>
-                <td>${Math.floor(Math.random() * 20 + 5)}</td>
-                <td>${Math.floor(Math.random() * 5 + 1)}</td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
+        <div class="table-scroll-wrap">
+          <table class="follow-table">
+            <thead>
+              <tr><th>团队</th><th>领域</th><th>评级</th><th>分配权重</th><th>已分配</th><th>成员均分</th></tr>
+            </thead>
+            <tbody>
+              ${teamData.map(t => `
+                <tr>
+                  <td><strong>${t.name}</strong></td>
+                  <td><span class="card-tag">#${t.domain}</span></td>
+                  <td><span style="display:inline-block;width:24px;height:24px;line-height:24px;text-align:center;border-radius:50%;background:${t.contributionLevel === 'A' ? '#4CAF5020' : t.contributionLevel === 'B' ? '#2196F320' : '#FF980020'};color:${t.contributionLevel === 'A' ? '#4CAF50' : t.contributionLevel === 'B' ? '#2196F3' : '#FF9800'};font-weight:700;">${t.contributionLevel}</span></td>
+                  <td>×${t.contributionLevel === 'A' ? '1.5' : t.contributionLevel === 'B' ? '1.0' : '0.7'}</td>
+                  <td>${Math.floor(Math.random() * 20 + 5)}</td>
+                  <td>${Math.floor(Math.random() * 5 + 1)}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
       </div>
     `;
   },
@@ -5227,7 +5333,7 @@ const App = {
     }
 
     container.innerHTML = `
-      <div style="padding: 20px 28px;">
+      <div class="resp-section">
         <div style="font-size: 16px; font-weight: 700; color: var(--color-primary); margin-bottom: 16px;">
           🌳 ${isAdmin ? '全系统' : '我的'}市场团队树
         </div>
@@ -5306,45 +5412,47 @@ const App = {
     const priorityMap = { '高': 'danger', '中': 'warning', '低': 'info' };
 
     container.innerHTML = `
-      <div style="padding: 20px 28px;">
-        <div style="display: flex; gap: 12px; margin-bottom: 16px;">
-          <div style="flex:1; padding: 12px; background: var(--color-card); border-radius: 8px; border-left: 3px solid var(--color-accent);">
+      <div class="resp-section">
+        <div class="task-stats-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 12px; margin-bottom: 16px;">
+          <div style="padding: 12px; background: var(--color-card); border-radius: 8px; border-left: 3px solid var(--color-accent);">
             <div style="font-size: 24px; font-weight: 700; color: var(--color-primary);">${todayTasks.length}</div>
             <div style="font-size: 12px; color: var(--color-text-secondary);">今日总任务</div>
           </div>
-          <div style="flex:1; padding: 12px; background: var(--color-card); border-radius: 8px; border-left: 3px solid var(--color-warning);">
+          <div style="padding: 12px; background: var(--color-card); border-radius: 8px; border-left: 3px solid var(--color-warning);">
             <div style="font-size: 24px; font-weight: 700; color: var(--color-warning);">${todayTasks.filter(t => t.status === 'pending').length}</div>
             <div style="font-size: 12px; color: var(--color-text-secondary);">待处理</div>
           </div>
-          <div style="flex:1; padding: 12px; background: var(--color-card); border-radius: 8px; border-left: 3px solid var(--color-primary-light);">
+          <div style="padding: 12px; background: var(--color-card); border-radius: 8px; border-left: 3px solid var(--color-primary-light);">
             <div style="font-size: 24px; font-weight: 700; color: var(--color-primary-light);">${todayTasks.filter(t => t.status === 'in_progress').length}</div>
             <div style="font-size: 12px; color: var(--color-text-secondary);">进行中</div>
           </div>
-          <div style="flex:1; padding: 12px; background: var(--color-card); border-radius: 8px; border-left: 3px solid var(--color-success);">
+          <div style="padding: 12px; background: var(--color-card); border-radius: 8px; border-left: 3px solid var(--color-success);">
             <div style="font-size: 24px; font-weight: 700; color: var(--color-success);">${todayTasks.filter(t => t.status === 'completed').length}</div>
             <div style="font-size: 12px; color: var(--color-text-secondary);">已完成</div>
           </div>
         </div>
-        <table class="follow-table">
-          <thead>
-            <tr><th>状态</th><th>优先级</th><th>任务</th><th>模块</th><th>截止</th><th>操作</th></tr>
-          </thead>
-          <tbody>
-            ${todayTasks.map(t => `
-              <tr>
-                <td><span class="status-badge ${statusMap[t.status].class}">${statusMap[t.status].text}</span></td>
-                <td><span class="alert-tag ${priorityMap[t.priority]}">${t.priority}</span></td>
-                <td><strong>${t.title}</strong></td>
-                <td><span class="card-tag">#${t.module}</span></td>
-                <td>${t.deadline}</td>
-                <td>
-                  ${t.status !== 'completed' ? `<button class="card-action-btn primary" onclick="App.showToast('已标记完成')">完成</button>` : ''}
-                  <button class="card-action-btn" onclick="App.showToast('查看任务详情')">详情</button>
-                </td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
+        <div class="table-scroll-wrap">
+          <table class="follow-table">
+            <thead>
+              <tr><th>状态</th><th>优先级</th><th>任务</th><th>模块</th><th>截止</th><th>操作</th></tr>
+            </thead>
+            <tbody>
+              ${todayTasks.map(t => `
+                <tr>
+                  <td><span class="status-badge ${statusMap[t.status].class}">${statusMap[t.status].text}</span></td>
+                  <td><span class="alert-tag ${priorityMap[t.priority]}">${t.priority}</span></td>
+                  <td><strong>${t.title}</strong></td>
+                  <td><span class="card-tag">#${t.module}</span></td>
+                  <td>${t.deadline}</td>
+                  <td>
+                    ${t.status !== 'completed' ? `<button class="card-action-btn primary" onclick="App.showToast('已标记完成')">完成</button>` : ''}
+                    <button class="card-action-btn" onclick="App.showToast('查看任务详情')">详情</button>
+                  </td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
       </div>
     `;
   },
@@ -5378,27 +5486,29 @@ const App = {
     };
 
     container.innerHTML = `
-      <div style="padding: 20px 28px;">
-        <table class="follow-table">
-          <thead>
-            <tr><th>状态</th><th>任务</th><th>模块</th><th>截止日期</th><th>负责人</th><th>操作</th></tr>
-          </thead>
-          <tbody>
-            ${weekTasks.map(t => `
-              <tr>
-                <td><span class="status-badge ${statusMap[t.status].class}">${statusMap[t.status].text}</span></td>
-                <td><strong>${t.title}</strong></td>
-                <td><span class="card-tag">#${t.module}</span></td>
-                <td>${t.deadline}</td>
-                <td>${t.assignee}</td>
-                <td>
-                  <button class="card-action-btn" onclick="App.showToast('查看任务详情')">详情</button>
-                  <button class="card-action-btn" onclick="App.showToast('已复制任务提示词')">AI辅助</button>
-                </td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
+      <div class="resp-section">
+        <div class="table-scroll-wrap">
+          <table class="follow-table">
+            <thead>
+              <tr><th>状态</th><th>任务</th><th>模块</th><th>截止日期</th><th>负责人</th><th>操作</th></tr>
+            </thead>
+            <tbody>
+              ${weekTasks.map(t => `
+                <tr>
+                  <td><span class="status-badge ${statusMap[t.status].class}">${statusMap[t.status].text}</span></td>
+                  <td><strong>${t.title}</strong></td>
+                  <td><span class="card-tag">#${t.module}</span></td>
+                  <td>${t.deadline}</td>
+                  <td>${t.assignee}</td>
+                  <td>
+                    <button class="card-action-btn" onclick="App.showToast('查看任务详情')">详情</button>
+                    <button class="card-action-btn" onclick="App.showToast('已复制任务提示词')">AI辅助</button>
+                  </td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
       </div>
     `;
   },
@@ -5422,7 +5532,7 @@ const App = {
     const days = ['周一', '周二', '周三', '周四', '周五', '周六', '周日', '下周一', '下周二'];
 
     container.innerHTML = `
-      <div style="padding: 20px 28px;">
+      <div class="resp-section">
         <h3 style="font-size: 16px; margin-bottom: 16px;">📊 本周甘特图</h3>
         <div style="overflow-x: auto;">
           <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
@@ -5477,18 +5587,18 @@ const App = {
     if (!container) return;
 
     const skills = [
-      { id: 'sk_01', name: '自媒体内容生成器', desc: '根据平台、赛道、品类自动生成文案', category: '自媒体运营', triggers: 128, status: 'active' },
-      { id: 'sk_02', name: '社群推送日历生成', desc: '根据社群类型自动匹配推送内容', category: '社群运营', triggers: 95, status: 'active' },
-      { id: 'sk_03', name: '课件评估助手', desc: '上传旧课件AI评估质量并优化', category: '课件制作', triggers: 42, status: 'active' },
-      { id: 'sk_04', name: '活动方案生成器', desc: '选择类型自动生成完整活动方案', category: '线下活动', triggers: 28, status: 'active' },
-      { id: 'sk_05', name: '考核试卷生成', desc: '根据课程内容自动出题', category: '经营者培训', triggers: 15, status: 'active' },
-      { id: 'sk_06', name: '合规检查器', desc: '检查内容是否触犯合规红线', category: '运营中枢', triggers: 67, status: 'active' }
+      { id: 'sk_01', name: '美乐家战略指导', desc: 'MelBeacon灯塔系统商业模式战略顾问。从0到1构建商业闭环、评估商业模式可行性、量化盈利能力、识别合规与市场风险、制定战略规划。', category: '战略规划', triggers: '商业模式评估·投入产出分析·晋升路径设计·风险管控', status: 'active' },
+      { id: 'sk_02', name: '美乐家自媒体运营专家', desc: 'MelBeacon灯塔系统全域自媒体运营专家。账号定位与人设、自媒体文案/脚本、内容选题规划、对标账号分析、数据分析诊断。', category: '自媒体运营', triggers: '账号定位·文案脚本·选题规划·对标分析·数据诊断', status: 'active' },
+      { id: 'sk_03', name: '美乐家社群运营专家', desc: 'MelBeacon灯塔系统全域社群规划专家。社群架构设计、运营SOP、社群话术模板、内容日历、转化漏斗、促活留存机制。', category: '社群运营', triggers: '社群架构·运营SOP·话术模板·内容日历·转化漏斗', status: 'active' },
+      { id: 'sk_04', name: '美乐家线下活动专家', desc: 'MelBeacon灯塔系统线下活动与体验馆运营专家。策划沙龙/讲座/社区活动、体验馆运营方案、活动执行SOP、物料清单、会后跟进。', category: '线下活动', triggers: '沙龙策划·体验馆运营·活动SOP·物料清单·会后跟进', status: 'active' },
+      { id: 'sk_05', name: '美乐家经营者培训导师', desc: 'MelBeacon灯塔系统经营者系统化培训导师。经营者分级培训课程、学习路径、产品知识教材、考核体系、团队复制方案。', category: '经营者培训', triggers: '分级培训·学习路径·产品知识·考核体系·团队复制', status: 'active' },
+      { id: 'sk_06', name: '美乐家课件制作专家', desc: 'MelBeacon灯塔系统课件策略与生产专家。评估旧课件、规划课件体系、生产PPT大纲/逐字稿/短视频文案/讲稿教案、推荐AI视频工具。', category: '课件制作', triggers: '课件评估·体系规划·PPT大纲·逐字稿·讲稿教案·AI工具推荐', status: 'active' }
     ];
 
     const statusMap = { active: { text: '启用中', class: 'active' }, inactive: { text: '已禁用', class: 'pending' } };
 
     container.innerHTML = `
-      <div style="padding: 20px 28px;">
+      <div class="resp-section">
         <div class="card-grid">
           ${skills.map(s => `
             <div class="content-card">
@@ -5501,7 +5611,7 @@ const App = {
               </div>
               <div style="font-size: 13px; color: var(--color-text-secondary); margin-bottom: 8px;">${s.desc}</div>
               <div class="card-metrics">
-                <span class="metric-item">触发次数: <strong>${s.triggers}</strong></span>
+                <span class="metric-item">触发场景: <strong>${s.triggers}</strong></span>
               </div>
               <div class="card-actions">
                 <button class="card-action-btn primary" onclick="App.showToast('查看技能详情')">详情</button>
@@ -5529,7 +5639,7 @@ const App = {
     ];
 
     container.innerHTML = `
-      <div style="padding: 20px 28px;">
+      <div class="resp-section">
         <div class="card-grid">
           ${prompts.map(p => `
             <div class="content-card">
@@ -5559,7 +5669,7 @@ const App = {
     if (!container) return;
 
     container.innerHTML = `
-      <div style="padding: 20px 28px;">
+      <div class="resp-section">
         <div class="arch-card">
           <div class="arch-card-header"><h3>⚙️ 全局技能配置</h3></div>
           <div style="margin-top: 10px; font-size: 14px; line-height: 2;">
@@ -5617,7 +5727,7 @@ const App = {
     };
 
     container.innerHTML = `
-      <div style="padding: 20px 28px;">
+      <div class="resp-section">
         <div class="card-grid">
           ${kols.map(k => `
             <div class="content-card">
@@ -5651,7 +5761,7 @@ const App = {
     if (!container) return;
 
     container.innerHTML = `
-      <div style="padding: 20px 28px;">
+      <div class="resp-section">
         <div class="kb-categories">
           <div class="kb-category-card" onclick="App.showToast('查看LOGO素材')"><span class="cat-name">LOGO素材</span><span class="cat-count">8</span></div>
           <div class="kb-category-card" onclick="App.showToast('查看品牌图集')"><span class="cat-name">品牌图集</span><span class="cat-count">45</span></div>
@@ -5676,7 +5786,7 @@ const App = {
     const statusMap = { ready: { text: '可使用', class: 'completed' }, draft: { text: '草稿', class: 'draft' } };
 
     container.innerHTML = `
-      <div style="padding: 20px 28px;">
+      <div class="resp-section">
         <div class="card-grid">
           ${proposals.map(p => `
             <div class="content-card">
@@ -5729,40 +5839,42 @@ const App = {
     };
 
     container.innerHTML = `
-      <div style="padding: 20px 28px;">
-        <table class="follow-table">
-          <thead>
-            <tr>
-              <th>头像</th>
-              <th>用户名</th>
-              <th>姓名</th>
-              <th>角色</th>
-              <th>状态</th>
-              <th>权限</th>
-              <th>最近登录</th>
-              <th>创建日期</th>
-              <th>操作</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${userAccounts.map(u => `
+      <div class="resp-section">
+        <div class="table-scroll-wrap">
+          <table class="follow-table">
+            <thead>
               <tr>
-                <td style="font-size: 20px;">${u.avatar}</td>
-                <td><strong>${u.username}</strong></td>
-                <td>${u.name}</td>
-                <td><span class="card-tag">#${u.role}</span></td>
-                <td><span class="status-badge ${statusMap[u.status].class}">${statusMap[u.status].text}</span></td>
-                <td style="font-size: 12px;">${u.permissions}</td>
-                <td>${u.lastLogin}</td>
-                <td>${u.createdDate}</td>
-                <td>
-                  <button class="card-action-btn" onclick="App.showToast('编辑用户: ${u.name}')">编辑</button>
-                  ${u.username !== 'admin' ? `<button class="card-action-btn" onclick="App.showToast('已重置密码')">重置密码</button>` : ''}
-                </td>
+                <th>头像</th>
+                <th>用户名</th>
+                <th>姓名</th>
+                <th>角色</th>
+                <th>状态</th>
+                <th>权限</th>
+                <th>最近登录</th>
+                <th>创建日期</th>
+                <th>操作</th>
               </tr>
-            `).join('')}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              ${userAccounts.map(u => `
+                <tr>
+                  <td style="font-size: 20px;">${u.avatar}</td>
+                  <td><strong>${u.username}</strong></td>
+                  <td>${u.name}</td>
+                  <td><span class="card-tag">#${u.role}</span></td>
+                  <td><span class="status-badge ${statusMap[u.status].class}">${statusMap[u.status].text}</span></td>
+                  <td style="font-size: 12px;">${u.permissions}</td>
+                  <td>${u.lastLogin}</td>
+                  <td>${u.createdDate}</td>
+                  <td>
+                    <button class="card-action-btn" onclick="App.showToast('编辑用户: ${u.name}')">编辑</button>
+                    ${u.username !== 'admin' ? `<button class="card-action-btn" onclick="App.showToast('已重置密码')">重置密码</button>` : ''}
+                  </td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
       </div>
     `;
   },
@@ -5927,7 +6039,7 @@ const App = {
     const scopeLabels = { personal: '个人', team: '团队', market: '市场', all: '全部' };
 
     container.innerHTML = `
-      <div style="padding: 20px 28px;">
+      <div class="resp-section">
         <!-- 说明栏 -->
         <div style="background: var(--color-accent-light); border-left: 4px solid var(--color-accent); padding: 14px 18px; border-radius: 0 8px 8px 0; margin-bottom: 20px;">
           <div style="font-size: 14px; font-weight: 600; color: var(--color-primary); margin-bottom: 6px;">🔐 三层权限架构</div>
@@ -5938,9 +6050,9 @@ const App = {
           </div>
         </div>
 
-        <div style="display: grid; grid-template-columns: 280px 1fr; gap: 20px; min-height: 600px;">
+        <div class="admin-roles-layout" style="display: grid; grid-template-columns: 280px 1fr; gap: 20px; min-height: 600px;">
           <!-- 左侧：角色选择器（按领域分组） -->
-          <div style="background: var(--color-surface); border-radius: 10px; border: 1px solid var(--color-border); padding: 12px; max-height: 70vh; overflow-y: auto;">
+          <div class="admin-role-sidebar" style="background: var(--color-surface); border-radius: 10px; border: 1px solid var(--color-border); padding: 12px; max-height: 70vh; overflow-y: auto;">
             ${domainGroups.map(group => {
               const rolesInGroup = Object.entries(ROLE_PERMISSIONS)
                 .filter(([code, data]) => data.domain === group.domain)
@@ -5973,7 +6085,7 @@ const App = {
           </div>
 
           <!-- 右侧：选中角色的三层权限详情 -->
-          <div style="background: var(--color-surface); border-radius: 10px; border: 1px solid var(--color-border); padding: 20px;">
+          <div class="admin-role-detail" style="background: var(--color-surface); border-radius: 10px; border: 1px solid var(--color-border); padding: 20px;">
             <!-- 角色头部信息 -->
             <div style="display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 18px; padding-bottom: 14px; border-bottom: 1px solid var(--color-border);">
               <div>
@@ -6227,7 +6339,7 @@ const App = {
 
     const s = systemSettings;
     container.innerHTML = `
-      <div style="padding: 20px 28px;">
+      <div class="resp-section">
         <div class="arch-card" style="margin-bottom: 16px;">
           <div class="arch-card-header"><h3>⚙️ 系统信息</h3></div>
           <div style="margin-top: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
@@ -6289,7 +6401,7 @@ const App = {
       { id: 'tab-courseware', icon: '📚', name: '课件制作', desc: '课件策略与生产 · 评估→大纲→脚本→素材', stats: '23课件 · 156素材' },
       { id: 'tab-offline', icon: '🎪', name: '线下活动', desc: '沙龙讲座 · 体验馆运营 · 社区公益', stats: '4活动 · 12沙龙' },
       { id: 'tab-training', icon: '🎓', name: '经营者培训', desc: 'D→D3→D5→D8→SD→ED→ND→CD→PD', stats: '24学员 · 6课程' },
-      { id: 'tab-hub', icon: '🏠', name: '运营中枢', desc: '角色专属看板 · 自动化任务 · 合规中心', stats: '21自动化 · 4复盘' },
+      { id: 'tab-hub', icon: '🏠', name: '运营中枢', desc: '角色专属看板 · 自动化任务 · 合规中心', stats: '13自动化 · 4复盘' },
       { id: 'tab-team', icon: '👥', name: '团队管理', desc: '团队全局视图 · 市场树 · 成长追踪', stats: '8团队 · 45成员' },
       { id: 'tab-tasks', icon: '📋', name: '任务计划', desc: '全局任务追踪 · 甘特图 · 优先级', stats: '12今日 · 31本周' },
       { id: 'tab-skills', icon: '🧩', name: 'Skills管理', desc: 'AI能力管理 · 技能配置 · 提示词', stats: '6技能 · 6模板' },
@@ -6351,8 +6463,7 @@ const App = {
   /* ========== 同步按钮 ========== */
   bindSyncBtn() {
     this._bindDualEvent('.sync-btn', () => {
-      this.showToast('正在同步到云端...');
-      setTimeout(() => this.showToast('同步完成'), 1500);
+      this.triggerSync();
     });
   },
 
@@ -6398,6 +6509,160 @@ const App = {
         this.showToast('已复制提示词到剪贴板');
       }
       document.body.removeChild(textarea);
+    }
+  },
+
+  /* ========== 飞书同步：检查同步服务器状态 ========== */
+  async checkSyncServer() {
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 3000);
+      const res = await fetch('/api/sync-status', { signal: controller.signal });
+      clearTimeout(timeout);
+
+      if (res.ok) {
+        const status = await res.json();
+        // 更新UI为已连接
+        this.updateSyncStatus('online', status);
+
+        // 自动触发同步（静默，不显示toast）
+        // 仅在启动时触发一次，避免 checkSyncServer <-> autoSync 循环
+        if (!this._autoSyncTriggered) {
+          this._autoSyncTriggered = true;
+          this.autoSync();
+        }
+      } else {
+        this.updateSyncStatus('offline', null);
+      }
+    } catch (e) {
+      // 服务器未运行
+      this.updateSyncStatus('offline', null);
+    }
+  },
+
+  /* ========== 飞书同步：静默自动同步 ========== */
+  async autoSync() {
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 120000); // 自动同步允许较长时间
+      await fetch('/api/sync', { signal: controller.signal });
+      clearTimeout(timeout);
+      // 同步完成后更新状态
+      this.checkSyncServer();
+    } catch (e) {
+      // 静默失败
+    }
+  },
+
+  /* ========== 飞书同步：手动触发同步（按钮点击） ========== */
+  async triggerSync() {
+    const btn = document.getElementById('sync-btn');
+
+    // 先探测同步服务器是否运行
+    let serverOnline = false;
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 3000);
+      const probe = await fetch('/api/sync-status', { signal: controller.signal });
+      clearTimeout(timeout);
+      serverOnline = probe.ok;
+    } catch (e) {
+      serverOnline = false;
+    }
+
+    if (!serverOnline) {
+      this.showToast('同步服务未运行，请双击「启动工作台.bat」');
+      this.updateSyncStatus('offline', null);
+      return;
+    }
+
+    // 按钮变为同步中并禁用
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = '同步中...';
+    }
+    this.updateSyncStatus('syncing', null);
+
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 120000); // 同步可能较慢
+      const res = await fetch('/api/sync', { signal: controller.signal });
+      clearTimeout(timeout);
+
+      if (res.ok) {
+        const data = await res.json();
+        const synced = data.totalSynced || 0;
+        const errors = data.totalErrors || 0;
+
+        if (errors > 0) {
+          // 部分成功（含全部失败但服务器已运行的情况）
+          this.showToast('同步完成：成功 ' + synced + ' 个，失败 ' + errors + ' 个');
+        } else {
+          // 成功
+          this.showToast('同步完成！下载了 ' + synced + ' 个新文件');
+        }
+      } else {
+        this.showToast('同步失败，请确认通过「启动工作台.bat」打开');
+      }
+    } catch (e) {
+      this.showToast('同步失败，请确认通过「启动工作台.bat」打开');
+    } finally {
+      // 恢复按钮
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = '🔄 立即同步';
+      }
+      // 更新同步状态
+      this.checkSyncServer();
+    }
+  },
+
+  /* ========== 飞书同步：更新同步状态UI ========== */
+  updateSyncStatus(state, status) {
+    const dot = document.getElementById('sync-dot');
+    const text = document.getElementById('sync-status-text');
+
+    if (dot) {
+      dot.classList.remove('online', 'offline', 'syncing');
+      if (state === 'online') {
+        dot.classList.add('online');
+      } else if (state === 'offline') {
+        dot.classList.add('offline');
+      } else if (state === 'syncing') {
+        dot.classList.add('syncing');
+      }
+    }
+
+    if (text) {
+      if (state === 'online') {
+        if (status && status.lastSync) {
+          text.textContent = '已同步 · ' + this.formatSyncTime(status.lastSync);
+        } else {
+          text.textContent = '已连接 · 未同步';
+        }
+      } else if (state === 'offline') {
+        text.textContent = '同步服务未启动';
+      } else if (state === 'syncing') {
+        text.textContent = '同步中...';
+      }
+    }
+  },
+
+  /* ========== 飞书同步：格式化同步时间 ========== */
+  formatSyncTime(isoString) {
+    try {
+      const d = new Date(isoString);
+      if (isNaN(d.getTime())) return '刚刚';
+      const now = new Date();
+      const diff = (now - d) / 1000; // 秒
+      if (diff < 60) return '刚刚';
+      if (diff < 3600) return Math.floor(diff / 60) + '分钟前';
+      if (diff < 86400) return Math.floor(diff / 3600) + '小时前';
+      // 超过一天显示具体时间
+      const pad = (n) => (n < 10 ? '0' + n : '' + n);
+      return (d.getMonth() + 1) + '/' + d.getDate() + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+    } catch (e) {
+      return '刚刚';
     }
   }
 };

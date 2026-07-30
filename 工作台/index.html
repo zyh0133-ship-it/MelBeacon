@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="format-detection" content="telephone=no">
   <title>MelBeacon 灯塔系统 · 工作台</title>
-  <link rel="stylesheet" href="css/style.css?v=20260729-v45">
+  <link rel="stylesheet" href="css/style.css?v=20260730-v50">
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
@@ -48,10 +48,10 @@
       </nav>
       <div class="sidebar-footer">
         <div class="sync-status">
-          <span class="sync-dot"></span>
-          <span>云端同步中 · 刚刚</span>
+          <span class="sync-dot" id="sync-dot"></span>
+          <span id="sync-status-text">检查同步状态...</span>
         </div>
-        <button class="sync-btn">🔄 立即同步</button>
+        <button class="sync-btn" id="sync-btn">🔄 立即同步</button>
       </div>
     </aside>
 
@@ -580,16 +580,16 @@
       <h2>🔗 全部入口</h2>
       <p>所有模块快捷导航 · 一览全局</p>
     </div>
-    <div id="all-entry-grid" class="scroll-container" style="padding: 20px 28px;"></div>
+    <div id="all-entry-grid" class="scroll-container resp-section"></div>
   </section>
 
     </main>
   </div>
 
   <!-- 引入脚本（auth.js必须在app.js之前加载） -->
-  <script src="js/data.js?v=20260729-v45"></script>
-  <script src="js/filters.js?v=20260729-v45"></script>
-  <script src="js/auth.js?v=20260729-v45"></script>
-  <script src="js/app.js?v=20260729-v45"></script>
+  <script src="js/data.js?v=20260730-v49"></script>
+  <script src="js/filters.js?v=20260730-v49"></script>
+  <script src="js/auth.js?v=20260730-v49"></script>
+  <script src="js/app.js?v=20260730-v49"></script>
 </body>
 </html>

@@ -20,6 +20,8 @@
 
   --color-card: #FFFFFF;
   --color-card-secondary: #F9F9FB;
+  --color-surface: #FFFFFF;        /* 卡片/区块表面背景（与 --color-card 一致，供 app.js 引用） */
+  --color-bg-card: #FFFFFF;        /* 自动化任务统计卡片背景（供 app.js 引用） */
 
   --color-text: #1C1C1E;          /* iOS label */
   --color-text-secondary: #6E6E73; /* iOS secondaryLabel */
@@ -1950,31 +1952,44 @@ body.auth-is-admin .admin-only {
   display: none !important;
 }
 
-/* ========== 子标签内容区 ========== */
-.sub-content {
-  display: none;
-}
-
-.sub-content.active {
-  display: block;
-}
-
 /* ========== 主标签页内容区 ========== */
 .tab-content {
   display: none;
-  height: 100%;
   overflow: hidden;
 }
 
 .tab-content.active {
   display: flex;
   flex-direction: column;
+  flex: 1;
+  min-height: 0; /* 关键：防止 flex item 被内容撑开 */
+}
+
+/* ========== 子标签内容区 ========== */
+.sub-content {
+  display: none;
+}
+
+.sub-content.active {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0; /* 关键：防止 flex item 被内容撑开 */
+}
+
+/* V4.5 修复：flex item 默认 min-height: auto 会阻止收缩，必须覆盖 */
+.sub-content.active > *,
+.scroll-container > * {
+  min-height: 0;
+  flex-shrink: 1;
 }
 
 /* 滚动容器 */
 .scroll-container {
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch; /* iOS 平滑滚动 */
   flex: 1;
+  min-height: 0; /* 关键：防止 flex item 被内容撑开 */
   padding: 0 28px 28px;
 }
 
@@ -2182,11 +2197,11 @@ body.auth-is-admin .admin-only {
     overflow-x: hidden;
   }
 
-  /* 布局：移除固定高度，让页面可滚动 */
+  /* 布局：保持 flex 高度链，确保 .scroll-container 的 flex:1 生效 */
   .app-layout {
-    height: auto;
+    height: 100vh;
     min-height: 100vh;
-    overflow: visible;
+    overflow: hidden;
   }
 
   /* 汉堡按钮可见 */
@@ -2218,7 +2233,9 @@ body.auth-is-admin .admin-only {
     width: 100% !important;
     max-width: 100% !important;  /* 关键：覆盖 calc(100vw - sidebar - 56px) */
     padding-top: 58px;
-    overflow: visible;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
   }
 
   /* 各区块内边距统一收紧为平板版 */
@@ -2268,13 +2285,18 @@ body.auth-is-admin .admin-only {
     flex-wrap: nowrap;
   }
 
-  /* 表格横向滚动 */
-  .follow-table,
-  table {
-    display: block;
-    width: 100%;
+  /* 表格横向滚动：用包裹容器实现，避免破坏 table 布局 */
+  .table-scroll-wrap {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
+    width: 100%;
+    border-radius: 8px;
+    border: 1px solid var(--color-border);
+  }
+  .table-scroll-wrap .follow-table {
+    min-width: 600px;
+    margin-bottom: 0;
+    border: none;
   }
 
   /* 子标签栏去掉 max-width，确保不溢出 */
@@ -2402,6 +2424,19 @@ body.auth-is-admin .admin-only {
     gap: 10px !important;
   }
 
+  /* 内联 repeat(4, 1fr) → 2 列（平板）或 1 列（手机 ≤768） */
+  [style*="grid-template-columns: repeat(4"],
+  [style*="grid-template-columns:repeat(4"] {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px !important;
+  }
+
+  /* auto-fill minmax(300px) 在手机上改小 */
+  [style*="minmax(300px"] {
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)) !important;
+    gap: 10px !important;
+  }
+
   /* 时间线更紧凑 */
   .timeline-item {
     gap: 8px;
@@ -2461,8 +2496,65 @@ body.auth-is-admin .admin-only {
     gap: 6px;
     font-size: 11px;
   }
+
+  /* 任务计划统计卡片 2 列 */
+  .task-stats-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  /* 后台管理权限配置：单列堆叠 */
+  .admin-roles-layout {
+    grid-template-columns: 1fr !important;
+    min-height: auto !important;
+    gap: 14px !important;
+  }
+  .admin-role-sidebar {
+    max-height: none !important;
+    padding: 10px !important;
+  }
+  .admin-role-detail {
+    padding: 14px !important;
+  }
+  /* 权限说明栏文字在手机上换行 */
+  .admin-role-detail > div > div > span[style*="display: inline-block"] {
+    display: block !important;
+    margin-bottom: 6px !important;
+    margin-right: 0 !important;
+  }
+  /* 权限头部信息在手机上堆叠 */
+  .admin-role-detail > div > div[style*="justify-content: space-between"] {
+    flex-direction: column !important;
+    gap: 10px !important;
+  }
+  /* 权限矩阵卡片在手机上单列 */
+  .admin-role-detail div[style*="grid-template-columns: repeat(auto-fill"] {
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
+  }
+  /* 权限说明文字换行 */
+  .admin-role-detail label[style*="display: flex"] {
+    padding: 10px !important;
+  }
+  .admin-role-detail div[style*="display: inline-block"] {
+    display: block !important;
+    margin-bottom: 4px !important;
+  }
+
+  /* 模态框移动端适配 */
+  .modal-overlay {
+    padding: 12px !important;
+    align-items: flex-end !important;
+  }
+  .modal-overlay .modal {
+    max-width: 100% !important;
+    width: 100% !important;
+    max-height: 92vh !important;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0 !important;
+  }
 }
 
+/* 断点 B-补充：≤768px 继续 */
+@media (max-width: 768px) {
   /* 汉堡按钮位置微调 */
   .menu-toggle {
     top: 12px;
@@ -2649,6 +2741,19 @@ body.auth-is-admin .admin-only {
     padding: 7px 10px !important;
     font-size: 12px !important;
   }
+
+  /* 内联 4 列 → 1 列（极小屏） */
+  [style*="grid-template-columns: repeat(4"],
+  [style*="grid-template-columns:repeat(4"] {
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
+  }
+
+  /* 任务统计卡片在极小屏上单列 */
+  .task-stats-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px !important;
+  }
 }
 
 /* ============================================================
@@ -2780,9 +2885,9 @@ body.force-mobile html {
   overflow-x: hidden;
 }
 body.force-mobile .app-layout {
-  height: auto;
+  height: 100vh;
   min-height: 100vh;
-  overflow: visible;
+  overflow: hidden;
 }
 body.force-mobile .menu-toggle {
   display: flex;
@@ -2823,7 +2928,9 @@ body.force-mobile .main-content {
   width: 100% !important;
   max-width: 100% !important;
   padding-top: 54px;
-  overflow: visible;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 body.force-mobile .page-header,
 body.force-mobile .platform-bar,
@@ -2947,12 +3054,17 @@ body.force-mobile .timeline-time {
 body.force-mobile .push-timeline {
   padding: 0 14px 14px;
 }
-body.force-mobile .follow-table {
-  display: block;
-  width: 100%;
+body.force-mobile .table-scroll-wrap {
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
-  white-space: nowrap;
+  width: 100%;
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+}
+body.force-mobile .table-scroll-wrap .follow-table {
+  min-width: 600px;
+  margin-bottom: 0;
+  border: none;
   font-size: 12px;
 }
 body.force-mobile .follow-table th,
@@ -3036,6 +3148,80 @@ body.force-mobile .card-metrics {
 body.force-mobile .card-actions {
   flex-wrap: wrap;
 }
+
+/* 任务计划统计卡片 2 列 */
+body.force-mobile .task-stats-grid {
+  grid-template-columns: repeat(2, 1fr) !important;
+  gap: 10px !important;
+}
+body.force-mobile .follow-table td:last-child {
+  min-width: 80px;
+}
+
+/* 后台管理权限配置：单列堆叠 */
+body.force-mobile .admin-roles-layout {
+  grid-template-columns: 1fr !important;
+  min-height: auto !important;
+  gap: 14px !important;
+}
+body.force-mobile .admin-role-sidebar {
+  max-height: none !important;
+  padding: 10px !important;
+}
+body.force-mobile .admin-role-detail {
+  padding: 14px !important;
+}
+body.force-mobile .admin-role-detail select.perm-select {
+  min-height: 36px;
+  font-size: 13px !important;
+  padding: 6px 8px !important;
+}
+body.force-mobile .admin-role-detail label[style*="display: flex"] {
+  padding: 10px !important;
+}
+body.force-mobile .admin-role-detail div[style*="grid-template-columns: repeat(auto-fill"] {
+  grid-template-columns: 1fr !important;
+  gap: 8px !important;
+}
+body.force-mobile .admin-role-detail div[style*="display: inline-block"] {
+  display: block !important;
+  margin-bottom: 4px !important;
+}
+body.force-mobile .admin-role-detail > div > div > span[style*="display: inline-block"] {
+  display: block !important;
+  margin-bottom: 6px !important;
+  margin-right: 0 !important;
+}
+body.force-mobile .admin-role-detail > div > div[style*="justify-content: space-between"] {
+  flex-direction: column !important;
+  gap: 10px !important;
+}
+
+/* 内联 4 列 → 2 列 */
+body.force-mobile [style*="grid-template-columns: repeat(4"],
+body.force-mobile [style*="grid-template-columns:repeat(4"] {
+  grid-template-columns: repeat(2, 1fr) !important;
+  gap: 12px !important;
+}
+
+/* 内联 1fr 1fr → 1fr */
+body.force-mobile [style*="grid-template-columns: 1fr 1fr"]:not([class]) {
+  grid-template-columns: 1fr !important;
+  gap: 10px !important;
+}
+
+/* 模态框移动端适配 */
+body.force-mobile .modal-overlay {
+  padding: 12px !important;
+  align-items: flex-end !important;
+}
+body.force-mobile .modal-overlay .modal {
+  max-width: 100% !important;
+  width: 100% !important;
+  max-height: 92vh !important;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0 !important;
+}
+
 /* V4.5：移动端 44px 最小点击区域（Apple HIG 标准） */
 body.force-mobile .card-action-btn {
   flex: 1;
@@ -3179,6 +3365,72 @@ body.force-desktop .view-switcher {
   .resp-section { padding: 12px 12px; }
 }
 
+/* 强制手机模式下 .resp-section 也要生效 */
+body.force-mobile .resp-section {
+  padding: 14px 14px;
+}
+
+/* ========== 任务计划页面移动端优化 ========== */
+@media (max-width: 768px) {
+  /* 任务统计卡片在手机上单列 */
+  .task-stats-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px !important;
+  }
+  /* 任务表格操作按钮简化 */
+  .follow-table td:last-child {
+    min-width: 80px;
+  }
+  .follow-table .card-action-btn {
+    padding: 6px 8px !important;
+    font-size: 11px !important;
+  }
+}
+
+/* ========== 后台权限配置页面移动端优化 ========== */
+@media (max-width: 768px) {
+  /* 权限配置整体布局 */
+  .admin-roles-layout {
+    grid-template-columns: 1fr !important;
+    min-height: auto !important;
+    gap: 14px !important;
+  }
+  .admin-role-sidebar {
+    max-height: none !important;
+    padding: 10px !important;
+  }
+  .admin-role-detail {
+    padding: 14px !important;
+  }
+  /* 权限矩阵卡片在手机上单列 */
+  .admin-role-detail div[style*="grid-template-columns: repeat(auto-fill"] {
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
+  }
+  /* 权限说明文字换行 */
+  .admin-role-detail div[style*="display: inline-block"] {
+    display: block !important;
+    margin-bottom: 4px !important;
+  }
+  /* 角色头部信息堆叠 */
+  .admin-role-detail > div > div[style*="justify-content: space-between"] {
+    flex-direction: column !important;
+    gap: 10px !important;
+  }
+  /* select 下拉框加大触摸区域 */
+  .admin-role-detail select.perm-select {
+    min-height: 36px;
+    font-size: 13px !important;
+    padding: 6px 8px !important;
+  }
+  /* 能力开关标签全宽 */
+  .admin-role-detail label[style*="display: flex"] {
+    padding: 10px !important;
+  }
+}
+
+
+
 /* ========== 卡片点击态增强：触摸设备不 hover，改为 active 高亮 ========== */
 @media (hover: none) and (pointer: coarse) {
   .content-card:hover,
@@ -3230,4 +3482,13 @@ body.force-desktop .view-switcher {
       padding-bottom: max(0px, env(safe-area-inset-bottom));
     }
   }
+}
+
+/* 飞书同步状态 */
+.sync-dot.online { background: #4CAF50; box-shadow: 0 0 8px #4CAF50; }
+.sync-dot.offline { background: #FF9800; box-shadow: 0 0 8px #FF9800; }
+.sync-dot.syncing { background: #2196F3; box-shadow: 0 0 8px #2196F3; animation: syncPulse 1.5s infinite; }
+@keyframes syncPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
 }
