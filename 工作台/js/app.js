@@ -5174,11 +5174,22 @@ const App = {
     const isAdmin = (typeof Auth !== 'undefined' && Auth.isAdmin) ? Auth.isAdmin() : false;
     const canManage = (typeof Auth !== 'undefined' && Auth.canManageTeamMembers) ? Auth.canManageTeamMembers() : false;
 
-    // 显示管理按钮
+    // 显示管理按钮 + 绑定事件（P0-4 修复：原按钮无 onclick，点击无任何反应）
     const addBtn = document.getElementById('team-btn-add-member');
     const exportBtn = document.getElementById('team-btn-export');
-    if (addBtn) addBtn.style.display = canManage ? '' : 'none';
-    if (exportBtn) exportBtn.style.display = canManage ? '' : 'none';
+    if (addBtn) {
+      addBtn.style.display = canManage ? '' : 'none';
+      // 防止重复绑定：先克隆再替换节点
+      const newAddBtn = addBtn.cloneNode(true);
+      addBtn.parentNode.replaceChild(newAddBtn, addBtn);
+      newAddBtn.addEventListener('click', () => App.openAddMemberModal());
+    }
+    if (exportBtn) {
+      exportBtn.style.display = canManage ? '' : 'none';
+      const newExportBtn = exportBtn.cloneNode(true);
+      exportBtn.parentNode.replaceChild(newExportBtn, exportBtn);
+      newExportBtn.addEventListener('click', () => App.exportTeamReport());
+    }
 
     container.innerHTML = `
       <div class="resp-section">
@@ -5222,6 +5233,182 @@ const App = {
         </div>
       </div>
     `;
+  },
+
+  /**
+   * P0-4 修复：打开"添加团队成员"模态框
+   * 调用 Auth.registerUser() 真实写入已注册用户列表（localStorage 持久化）
+   */
+  openAddMemberModal() {
+    // 权限校验
+    if (typeof Auth === 'undefined' || !Auth.canManageTeamMembers()) {
+      this.showToast('您没有权限添加成员');
+      return;
+    }
+
+    // 领域选项
+    const domainOptions = (typeof DOMAIN_LABELS !== 'undefined')
+      ? Object.entries(DOMAIN_LABELS).map(([k, v]) => `<option value="${k}">${v}</option>`).join('')
+      : '<option value="social">自媒体</option>';
+
+    // 当前用户的团队（用于默认填充）
+    const currentUser = (typeof Auth !== 'undefined' && Auth.currentUser) ? Auth.currentUser : null;
+    const defaultTeamId = currentUser && currentUser.teamId ? currentUser.teamId : '';
+
+    const modal = document.getElementById('modal-overlay') || this._ensureModalOverlay();
+    modal.innerHTML = `
+      <div class="modal" style="max-width: 480px; max-height: 90vh; overflow-y: auto;">
+        <div class="modal-header">
+          <h3>➕ 添加团队成员</h3>
+          <button class="modal-close" onclick="App.hideModal()">×</button>
+        </div>
+        <div class="modal-body" style="padding: 20px 24px;">
+          <div style="display: grid; gap: 14px;">
+            <div>
+              <label style="display:block; font-size:12px; color:var(--color-text-secondary); margin-bottom:6px;">姓名 *</label>
+              <input type="text" id="addmem-name" placeholder="请输入成员姓名" style="width:100%; padding:9px 12px; border:1px solid var(--color-border); border-radius:8px; font-size:14px; font-family:var(--font-system);">
+            </div>
+            <div>
+              <label style="display:block; font-size:12px; color:var(--color-text-secondary); margin-bottom:6px;">登录用户名 *</label>
+              <input type="text" id="addmem-username" placeholder="用于登录工作台" style="width:100%; padding:9px 12px; border:1px solid var(--color-border); border-radius:8px; font-size:14px; font-family:var(--font-system);">
+            </div>
+            <div>
+              <label style="display:block; font-size:12px; color:var(--color-text-secondary); margin-bottom:6px;">初始密码 *</label>
+              <input type="password" id="addmem-password" placeholder="默认 MelBeacon123" value="MelBeacon123" style="width:100%; padding:9px 12px; border:1px solid var(--color-border); border-radius:8px; font-size:14px; font-family:var(--font-system);">
+            </div>
+            <div>
+              <label style="display:block; font-size:12px; color:var(--color-text-secondary); margin-bottom:6px;">所属领域 *</label>
+              <select id="addmem-domain" style="width:100%; padding:9px 12px; border:1px solid var(--color-border); border-radius:8px; font-size:14px; font-family:var(--font-system); background:var(--color-card);">
+                ${domainOptions}
+              </select>
+            </div>
+            <div>
+              <label style="display:block; font-size:12px; color:var(--color-text-secondary); margin-bottom:6px;">职责（自动匹配角色权限）*</label>
+              <select id="addmem-responsibility" style="width:100%; padding:9px 12px; border:1px solid var(--color-border); border-radius:8px; font-size:14px; font-family:var(--font-system); background:var(--color-card);">
+                <option value="">请先选择领域</option>
+              </select>
+            </div>
+            <div>
+              <label style="display:block; font-size:12px; color:var(--color-text-secondary); margin-bottom:6px;">所属团队 ID（可选）</label>
+              <input type="text" id="addmem-teamid" placeholder="留空则由系统默认" value="${defaultTeamId}" style="width:100%; padding:9px 12px; border:1px solid var(--color-border); border-radius:8px; font-size:14px; font-family:var(--font-system);">
+            </div>
+            <div id="addmem-error" style="color:var(--color-danger); font-size:12px; min-height:16px;"></div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="card-action-btn" onclick="App.hideModal()">取消</button>
+          <button class="card-action-btn primary" id="addmem-submit">✓ 确认添加</button>
+        </div>
+      </div>
+    `;
+    modal.style.display = 'flex';
+
+    // 领域切换 → 动态加载职责选项
+    const domainSel = document.getElementById('addmem-domain');
+    const respSel = document.getElementById('addmem-responsibility');
+    domainSel.addEventListener('change', () => {
+      const d = domainSel.value;
+      const opts = (typeof RESPONSIBILITY_OPTIONS !== 'undefined' && RESPONSIBILITY_OPTIONS[d])
+        ? RESPONSIBILITY_OPTIONS[d]
+        : [];
+      respSel.innerHTML = opts.length
+        ? opts.map(o => `<option value="${o}">${o}</option>`).join('')
+        : '<option value="">该领域暂无职责选项</option>';
+    });
+    // 触发一次 change 填充默认职责
+    domainSel.dispatchEvent(new Event('change'));
+
+    // 提交按钮
+    document.getElementById('addmem-submit').addEventListener('click', () => {
+      const userInfo = {
+        name: document.getElementById('addmem-name').value.trim(),
+        username: document.getElementById('addmem-username').value.trim(),
+        password: document.getElementById('addmem-password').value,
+        domain: document.getElementById('addmem-domain').value,
+        responsibility: document.getElementById('addmem-responsibility').value,
+        teamId: document.getElementById('addmem-teamid').value.trim() || null
+      };
+
+      const errEl = document.getElementById('addmem-error');
+      errEl.textContent = '';
+
+      if (!userInfo.name || !userInfo.username || !userInfo.password) {
+        errEl.textContent = '请填写姓名、用户名和密码';
+        return;
+      }
+
+      const result = Auth.registerUser(userInfo);
+      if (result.success) {
+        this.showToast(`✓ 成员"${userInfo.name}"已添加（角色：${result.account.desc}）`);
+        this.hideModal();
+        // 刷新成员列表
+        this.renderTeamMembers();
+      } else {
+        errEl.textContent = result.message || '添加失败';
+      }
+    });
+  },
+
+  /**
+   * P0-4 修复：导出团队成员报告（CSV 格式，浏览器下载）
+   */
+  exportTeamReport() {
+    // 权限校验
+    if (typeof Auth === 'undefined' || !Auth.canManageTeamMembers()) {
+      this.showToast('您没有权限导出团队报告');
+      return;
+    }
+
+    // 获取可管理的成员列表
+    let members = [];
+    if (typeof Auth !== 'undefined' && Auth.getManageableMembers) {
+      members = Auth.getManageableMembers();
+    }
+    // 兜底：使用当前渲染的成员数据
+    if (!members || members.length === 0) {
+      members = (typeof teamMembers !== 'undefined') ? teamMembers : [];
+    }
+
+    if (!members || members.length === 0) {
+      this.showToast('当前没有可导出的成员数据');
+      return;
+    }
+
+    // CSV 表头
+    const headers = ['姓名', '用户名', '角色', '领域', '团队ID', '阶衔', '数据范围', '注册时间'];
+    const rows = members.map(m => [
+      m.name || '',
+      m.username || '',
+      m.desc || m.role || '',
+      m.domain || '',
+      m.teamId || '',
+      m.isLead ? '源头' : (m.isSDPlus ? 'SD+' : '成员'),
+      m.dataScope || '',
+      m.registeredAt || ''
+    ]);
+
+    // CSV 内容（加 BOM 解决 Excel 中文乱码）
+    let csv = '\uFEFF' + headers.join(',') + '\n';
+    rows.forEach(r => {
+      csv += r.map(cell => {
+        const s = String(cell).replace(/"/g, '""');
+        return /[",\n]/.test(s) ? `"${s}"` : s;
+      }).join(',') + '\n';
+    });
+
+    // 触发下载
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const ts = new Date().toISOString().slice(0, 10);
+    a.href = url;
+    a.download = `团队报告_${ts}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    this.showToast(`✓ 已导出 ${members.length} 位成员的报告`);
   },
 
   /* --- 成长追踪 --- */
