@@ -1977,14 +1977,14 @@ body.auth-is-admin .admin-only {
   min-height: 0; /* 关键：防止 flex item 被内容撑开 */
 }
 
-/* V4.5 修复：flex item 默认 min-height: auto 会阻止收缩，必须覆盖 */
-.sub-content.active > *,
-.scroll-container > * {
+/* V4.6 修复：只对 .sub-content.active > * 生效，不对 .scroll-container > * 生效
+   因为 .scroll-container 内部的子元素（卡片、表格等）需要正常高度 */
+.sub-content.active > * {
   min-height: 0;
   flex-shrink: 1;
 }
 
-/* 滚动容器 */
+/* 滚动容器：内部子元素保持正常高度，不强制收缩 */
 .scroll-container {
   overflow-y: auto;
   -webkit-overflow-scrolling: touch; /* iOS 平滑滚动 */

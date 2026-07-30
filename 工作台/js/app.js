@@ -42,6 +42,9 @@ const App = {
     this.bindSyncBtn();
     this.bindMobileSidebar(); // V4.2 第三阶段：移动端侧边栏切换
 
+    // 任务5：加载 localStorage 中的自定义内容卡片
+    this._initCustomSocialCards();
+
     // 默认激活第一个标签页
     this.switchTab('tab-social');
     Filters.init();
@@ -669,6 +672,7 @@ const App = {
         <button class="primary-action-go" onclick="App.showToast('已复制提示词到剪贴板')">开始生成 →</button>
       </div>
       <div class="secondary-actions">
+        <button class="secondary-action-btn" onclick="App.openSocialCardModal()" style="background:var(--color-accent-soft); border-color:var(--color-accent); color:var(--color-accent); font-weight:600;">➕ 新增内容</button>
         <button class="secondary-action-btn" onclick="App.showToast('已复制提示词到剪贴板')">🔍 找低粉爆款</button>
         <button class="secondary-action-btn" onclick="App.showToast('已复制提示词到剪贴板')">📊 分析我的账号</button>
         <button class="secondary-action-btn" onclick="App.showToast('已复制提示词到剪贴板')">🎯 添加对标账号</button>
@@ -745,12 +749,240 @@ const App = {
                 <button class="card-action-btn" onclick="App.showToast('正在查看数据详情')">查看数据</button>
                 <button class="card-action-btn primary" onclick="App.showToast('已复制AI优化指令到剪贴板')">🤖派AI优化</button>
                 <button class="card-action-btn" onclick="App.copyToClipboard('${c.title}')">复制</button>
+                <button class="card-action-btn" onclick="App.openSocialCardModal('${c.id}')" title="编辑">✏️</button>
+                <button class="card-action-btn" onclick="App.deleteSocialCard('${c.id}')" title="删除" style="color:var(--color-danger);">🗑</button>
               </div>
             </div>
           `;
         }).join('')}
       </div>
     `;
+  },
+
+  /* ========== 任务5：自媒体内容库 CRUD（localStorage 持久化） ========== */
+
+  /**
+   * 从 localStorage 加载自定义内容卡片，合并到 socialMediaCards
+   * 自动化任务填充的数据是"基础数据"，用户手动新增/编辑的存 localStorage
+   */
+  _loadCustomSocialCards() {
+    try {
+      const saved = localStorage.getItem('melbeacon_custom_social_cards');
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) { return []; }
+  },
+
+  _saveCustomSocialCards(cards) {
+    try {
+      localStorage.setItem('melbeacon_custom_social_cards', JSON.stringify(cards));
+    } catch (e) {
+      this.showToast('保存失败：localStorage 不可用');
+    }
+  },
+
+  /**
+   * 打开新增/编辑内容卡片模态框
+   * @param {string} [cardId] - 传入则为编辑模式，不传为新增
+   */
+  openSocialCardModal(cardId) {
+    const isEdit = !!cardId;
+    const card = isEdit ? socialMediaCards.find(c => c.id === cardId) : null;
+    if (isEdit && !card) {
+      this.showToast('未找到该内容卡片');
+      return;
+    }
+
+    const platformOpts = [
+      { v: 'xiaohongshu', t: '小红书' }, { v: 'douyin', t: '抖音' },
+      { v: 'bilibili', t: 'B站' }, { v: 'xiaoyuzhou', t: '小宇宙' }, { v: 'shipinhao', t: '视频号' }
+    ];
+    const statusOpts = [
+      { v: 'pending', t: '待发布' }, { v: 'published', t: '已发布' },
+      { v: 'monitoring', t: '监测中' }, { v: 'need_optimize', t: '需优化' }
+    ];
+    const domains = (typeof filterDimensions !== 'undefined' && filterDimensions.domains) ? filterDimensions.domains : ['全部'];
+    const tracks = (typeof filterDimensions !== 'undefined' && filterDimensions.tracks) ? filterDimensions.tracks : ['全部'];
+    const formats = (typeof filterDimensions !== 'undefined' && filterDimensions.formats) ? filterDimensions.formats : ['图文', '视频', '音频'];
+
+    const c = card || {};
+    const modal = document.getElementById('modal-overlay') || this._ensureModalOverlay();
+    modal.innerHTML = `
+      <div class="modal" style="max-width:520px; max-height:90vh; overflow-y:auto;">
+        <div class="modal-header">
+          <h3>${isEdit ? '✏️ 编辑内容' : '➕ 新增内容'}</h3>
+          <button class="modal-close" onclick="App.hideModal()">×</button>
+        </div>
+        <div class="modal-body" style="padding:20px 24px;">
+          <div style="display:grid; gap:14px;">
+            <div>
+              <label style="display:block; font-size:12px; color:var(--color-text-secondary); margin-bottom:6px;">标题 *</label>
+              <input type="text" id="scm-title" value="${c.title || ''}" placeholder="请输入内容标题" style="width:100%; padding:9px 12px; border:1px solid var(--color-border); border-radius:8px; font-size:14px; font-family:var(--font-system);">
+            </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+              <div>
+                <label style="display:block; font-size:12px; color:var(--color-text-secondary); margin-bottom:6px;">平台 *</label>
+                <select id="scm-platform" style="width:100%; padding:9px 12px; border:1px solid var(--color-border); border-radius:8px; font-size:14px; background:var(--color-card); font-family:var(--font-system);">
+                  ${platformOpts.map(o => `<option value="${o.v}" ${c.platform === o.v ? 'selected' : ''}>${o.t}</option>`).join('')}
+                </select>
+              </div>
+              <div>
+                <label style="display:block; font-size:12px; color:var(--color-text-secondary); margin-bottom:6px;">状态 *</label>
+                <select id="scm-status" style="width:100%; padding:9px 12px; border:1px solid var(--color-border); border-radius:8px; font-size:14px; background:var(--color-card); font-family:var(--font-system);">
+                  ${statusOpts.map(o => `<option value="${o.v}" ${c.status === o.v ? 'selected' : ''}>${o.t}</option>`).join('')}
+                </select>
+              </div>
+            </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+              <div>
+                <label style="display:block; font-size:12px; color:var(--color-text-secondary); margin-bottom:6px;">领域</label>
+                <select id="scm-domain" style="width:100%; padding:9px 12px; border:1px solid var(--color-border); border-radius:8px; font-size:14px; background:var(--color-card); font-family:var(--font-system);">
+                  ${domains.map(d => `<option value="${d}" ${c.domain === d ? 'selected' : ''}>${d}</option>`).join('')}
+                </select>
+              </div>
+              <div>
+                <label style="display:block; font-size:12px; color:var(--color-text-secondary); margin-bottom:6px;">赛道</label>
+                <select id="scm-track" style="width:100%; padding:9px 12px; border:1px solid var(--color-border); border-radius:8px; font-size:14px; background:var(--color-card); font-family:var(--font-system);">
+                  ${tracks.map(t => `<option value="${t}" ${c.track === t ? 'selected' : ''}>${t}</option>`).join('')}
+                </select>
+              </div>
+            </div>
+            <div>
+              <label style="display:block; font-size:12px; color:var(--color-text-secondary); margin-bottom:6px;">形式</label>
+              <select id="scm-format" style="width:100%; padding:9px 12px; border:1px solid var(--color-border); border-radius:8px; font-size:14px; background:var(--color-card); font-family:var(--font-system);">
+                ${formats.map(f => `<option value="${f}" ${c.format === f ? 'selected' : ''}>${f}</option>`).join('')}
+              </select>
+            </div>
+            <div>
+              <label style="display:block; font-size:12px; color:var(--color-text-secondary); margin-bottom:6px;">标签（逗号分隔）</label>
+              <input type="text" id="scm-tags" value="${(c.tags || []).join(', ')}" placeholder="如：营养学, 减脂, 早餐" style="width:100%; padding:9px 12px; border:1px solid var(--color-border); border-radius:8px; font-size:14px; font-family:var(--font-system);">
+            </div>
+            <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:10px;">
+              <div>
+                <label style="display:block; font-size:12px; color:var(--color-text-secondary); margin-bottom:6px;">播放量</label>
+                <input type="number" id="scm-views" value="${c.views || 0}" min="0" style="width:100%; padding:9px 8px; border:1px solid var(--color-border); border-radius:8px; font-size:14px; font-family:var(--font-system);">
+              </div>
+              <div>
+                <label style="display:block; font-size:12px; color:var(--color-text-secondary); margin-bottom:6px;">点赞</label>
+                <input type="number" id="scm-likes" value="${c.likes || 0}" min="0" style="width:100%; padding:9px 8px; border:1px solid var(--color-border); border-radius:8px; font-size:14px; font-family:var(--font-system);">
+              </div>
+              <div>
+                <label style="display:block; font-size:12px; color:var(--color-text-secondary); margin-bottom:6px;">评论</label>
+                <input type="number" id="scm-comments" value="${c.comments || 0}" min="0" style="width:100%; padding:9px 8px; border:1px solid var(--color-border); border-radius:8px; font-size:14px; font-family:var(--font-system);">
+              </div>
+              <div>
+                <label style="display:block; font-size:12px; color:var(--color-text-secondary); margin-bottom:6px;">收藏</label>
+                <input type="number" id="scm-favorites" value="${c.favorites || 0}" min="0" style="width:100%; padding:9px 8px; border:1px solid var(--color-border); border-radius:8px; font-size:14px; font-family:var(--font-system);">
+              </div>
+            </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+              <div>
+                <label style="display:block; font-size:12px; color:var(--color-text-secondary); margin-bottom:6px;">涨粉率（如 +2.5%）</label>
+                <input type="text" id="scm-growth" value="${c.followerGrowth || '+0%'}" style="width:100%; padding:9px 12px; border:1px solid var(--color-border); border-radius:8px; font-size:14px; font-family:var(--font-system);">
+              </div>
+              <div>
+                <label style="display:block; font-size:12px; color:var(--color-text-secondary); margin-bottom:6px;">推荐度（0-100）</label>
+                <input type="number" id="scm-score" value="${c.score || 50}" min="0" max="100" style="width:100%; padding:9px 12px; border:1px solid var(--color-border); border-radius:8px; font-size:14px; font-family:var(--font-system);">
+              </div>
+            </div>
+            <div id="scm-error" style="color:var(--color-danger); font-size:12px; min-height:16px;"></div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="card-action-btn" onclick="App.hideModal()">取消</button>
+          <button class="card-action-btn primary" id="scm-submit">${isEdit ? '💾 保存修改' : '✓ 添加'}</button>
+        </div>
+      </div>
+    `;
+    modal.style.display = 'flex';
+
+    document.getElementById('scm-submit').addEventListener('click', () => {
+      const title = document.getElementById('scm-title').value.trim();
+      if (!title) {
+        document.getElementById('scm-error').textContent = '请填写标题';
+        return;
+      }
+
+      const data = {
+        id: isEdit ? card.id : 'sc_' + Date.now(),
+        title,
+        platform: document.getElementById('scm-platform').value,
+        status: document.getElementById('scm-status').value,
+        domain: document.getElementById('scm-domain').value,
+        track: document.getElementById('scm-track').value,
+        format: document.getElementById('scm-format').value,
+        tags: document.getElementById('scm-tags').value.split(/[,，]/).map(s => s.trim()).filter(Boolean),
+        views: parseInt(document.getElementById('scm-views').value) || 0,
+        likes: parseInt(document.getElementById('scm-likes').value) || 0,
+        comments: parseInt(document.getElementById('scm-comments').value) || 0,
+        favorites: parseInt(document.getElementById('scm-favorites').value) || 0,
+        followerGrowth: document.getElementById('scm-growth').value.trim() || '+0%',
+        score: parseInt(document.getElementById('scm-score').value) || 50,
+        publishDate: isEdit ? (card.publishDate || new Date().toISOString().slice(0,10)) : new Date().toISOString().slice(0,10),
+        _custom: true
+      };
+
+      const customCards = this._loadCustomSocialCards();
+      if (isEdit) {
+        // 更新 localStorage 中的自定义卡片
+        const idx = customCards.findIndex(c => c.id === card.id);
+        if (idx >= 0) {
+          customCards[idx] = data;
+        } else {
+          // 原本是自动化任务填充的，编辑后存入 localStorage
+          customCards.push(data);
+        }
+        // 同步更新 socialMediaCards 数组
+        const arrIdx = socialMediaCards.findIndex(c => c.id === card.id);
+        if (arrIdx >= 0) socialMediaCards[arrIdx] = data;
+      } else {
+        customCards.push(data);
+        socialMediaCards.push(data);
+      }
+      this._saveCustomSocialCards(customCards);
+
+      this.showToast(isEdit ? '✓ 已保存修改' : '✓ 已添加新内容');
+      this.hideModal();
+      Filters.applyFilters();
+    });
+  },
+
+  /**
+   * 删除内容卡片
+   */
+  deleteSocialCard(cardId) {
+    const card = socialMediaCards.find(c => c.id === cardId);
+    if (!card) {
+      this.showToast('未找到该内容');
+      return;
+    }
+    if (!confirm(`确认删除"${card.title}"？此操作不可撤销。`)) return;
+
+    // 从 socialMediaCards 移除
+    const idx = socialMediaCards.findIndex(c => c.id === cardId);
+    if (idx >= 0) socialMediaCards.splice(idx, 1);
+
+    // 从 localStorage 移除
+    const customCards = this._loadCustomSocialCards();
+    const cIdx = customCards.findIndex(c => c.id === cardId);
+    if (cIdx >= 0) {
+      customCards.splice(cIdx, 1);
+      this._saveCustomSocialCards(customCards);
+    }
+
+    this.showToast('✓ 已删除');
+    Filters.applyFilters();
+  },
+
+  /**
+   * 初始化时合并 localStorage 中的自定义内容卡片到 socialMediaCards
+   */
+  _initCustomSocialCards() {
+    const customCards = this._loadCustomSocialCards();
+    customCards.forEach(c => {
+      if (!socialMediaCards.find(s => s.id === c.id)) {
+        socialMediaCards.push(c);
+      }
+    });
   },
 
   /**
@@ -1570,13 +1802,21 @@ const App = {
     const container = document.getElementById('comm-arch');
     if (!container) return;
 
+    try {
+    // 合并 localStorage 中的自定义架构
+    const allArch = this._loadCustomArchData();
+
     container.innerHTML = `
       <div class="resp-section">
-        ${architectureData.map(a => `
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+          <div style="font-size:13px; color:var(--color-text-secondary);">共 ${allArch.length} 个架构</div>
+          <button class="card-action-btn primary" onclick="App.openArchModal()" style="background:var(--color-accent); border-color:var(--color-accent); color:var(--color-primary); font-weight:600;">➕ 新增架构</button>
+        </div>
+        ${allArch.map(a => `
           <div class="arch-card">
             <div class="arch-card-header">
               <h3>${a.name}</h3>
-              <span class="status-badge ${a.status === '运行中' ? 'active' : 'pending'}">${a.status}</span>
+              <span class="status-badge ${a.status === '运行中' ? 'active' : (a.status === '规划中' ? 'pending' : 'paused')}">${a.status}</span>
             </div>
             <div class="arch-meta">
               <span>📦 类型: ${a.type}</span>
@@ -1585,15 +1825,278 @@ const App = {
               <span>🔄 漏斗: ${a.funnelStage}</span>
               <span>📋 版本: ${a.version}</span>
             </div>
+            ${a.sopText ? `
+            <div style="margin-top:10px; padding:10px 12px; background:var(--color-card-secondary); border-radius:8px; font-size:12.5px; color:var(--color-text-secondary); line-height:1.6; max-height:80px; overflow:hidden;">
+              ${a.sopText}
+            </div>` : ''}
             <div style="margin-top: 10px;">
-              <button class="card-action-btn primary" onclick="App.showToast('已复制架构SOP到剪贴板')">📋 查看SOP</button>
-              <button class="card-action-btn" onclick="App.showToast('进入编辑模式')">✏️ 编辑</button>
-              <button class="card-action-btn" onclick="App.showToast('已复制架构')">🔄 复制</button>
+              <button class="card-action-btn primary" onclick="App.viewArchSop('${a.id}')">📋 查看SOP</button>
+              <button class="card-action-btn" onclick="App.openArchModal('${a.id}')">✏️ 编辑</button>
+              <button class="card-action-btn" onclick="App.copyArchData('${a.id}')">🔄 复制</button>
+              <button class="card-action-btn" onclick="App.deleteArch('${a.id}')" style="color:var(--color-danger);">🗑 删除</button>
             </div>
           </div>
         `).join('')}
       </div>
     `;
+    } catch (e) {
+      console.error('renderArchitecture error:', e);
+      container.innerHTML = `
+        <div class="resp-section" style="text-align:center; padding:40px 20px;">
+          <div style="font-size:48px; margin-bottom:12px;">⚠️</div>
+          <h3 style="margin-bottom:8px;">页面加载出错</h3>
+          <p style="color:var(--color-text-secondary); font-size:13px;">${e.message}</p>
+          <button class="card-action-btn primary" onclick="App.renderArchitecture()" style="margin-top:16px;">🔄 重试</button>
+        </div>
+      `;
+    }
+  },
+
+  /* ========== 任务6：社群架构SOP 编辑器 ========== */
+
+  _loadCustomArchData() {
+    try {
+      const saved = localStorage.getItem('melbeacon_custom_arch');
+      const custom = saved ? JSON.parse(saved) : [];
+      // 合并：自定义的 + data.js 原有的
+      const base = (typeof architectureData !== 'undefined') ? architectureData : [];
+      const merged = [...base];
+      custom.forEach(c => {
+        const idx = merged.findIndex(m => m.id === c.id);
+        if (idx >= 0) merged[idx] = c;
+        else merged.push(c);
+      });
+      return merged;
+    } catch (e) {
+      return (typeof architectureData !== 'undefined') ? architectureData : [];
+    }
+  },
+
+  _saveCustomArchData(arch) {
+    try {
+      // 只存非 data.js 原生的（_custom 标记）或被编辑过的
+      const base = (typeof architectureData !== 'undefined') ? architectureData : [];
+      const custom = arch.filter(a => {
+        const original = base.find(b => b.id === a.id);
+        if (!original) return true; // 新增的
+        // 被编辑过的（对比关键字段）
+        return JSON.stringify(original) !== JSON.stringify(a);
+      });
+      localStorage.setItem('melbeacon_custom_arch', JSON.stringify(custom));
+    } catch (e) {
+      this.showToast('保存失败：localStorage 不可用');
+    }
+  },
+
+  /**
+   * 打开新增/编辑架构模态框
+   */
+  openArchModal(archId) {
+    const isEdit = !!archId;
+    const allArch = this._loadCustomArchData();
+    const arch = isEdit ? allArch.find(a => a.id === archId) : null;
+    if (isEdit && !arch) { this.showToast('未找到该架构'); return; }
+
+    const a = arch || {};
+    const typeOpts = ['引流社群', '会员服务', '经营者培育', '体验营', '其他'];
+    const statusOpts = ['运行中', '规划中', '已暂停'];
+    const funnelOpts = ['L1', 'L1 -> L2', 'L2', 'L2 -> L3', 'L3'];
+
+    const modal = document.getElementById('modal-overlay') || this._ensureModalOverlay();
+    modal.innerHTML = `
+      <div class="modal" style="max-width:560px; max-height:90vh; overflow-y:auto;">
+        <div class="modal-header">
+          <h3>${isEdit ? '✏️ 编辑社群架构' : '➕ 新增社群架构'}</h3>
+          <button class="modal-close" onclick="App.hideModal()">×</button>
+        </div>
+        <div class="modal-body" style="padding:20px 24px;">
+          <div style="display:grid; gap:14px;">
+            <div>
+              <label style="display:block; font-size:12px; color:var(--color-text-secondary); margin-bottom:6px;">架构名称 *</label>
+              <input type="text" id="arch-name" value="${a.name || ''}" placeholder="如：30天营养训练营" style="width:100%; padding:9px 12px; border:1px solid var(--color-border); border-radius:8px; font-size:14px; font-family:var(--font-system);">
+            </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px;">
+              <div>
+                <label style="display:block; font-size:12px; color:var(--color-text-secondary); margin-bottom:6px;">类型 *</label>
+                <select id="arch-type" style="width:100%; padding:9px 10px; border:1px solid var(--color-border); border-radius:8px; font-size:14px; background:var(--color-card); font-family:var(--font-system);">
+                  ${typeOpts.map(o => `<option ${a.type === o ? 'selected' : ''}>${o}</option>`).join('')}
+                </select>
+              </div>
+              <div>
+                <label style="display:block; font-size:12px; color:var(--color-text-secondary); margin-bottom:6px;">时长</label>
+                <input type="text" id="arch-duration" value="${a.duration || ''}" placeholder="如：30天" style="width:100%; padding:9px 10px; border:1px solid var(--color-border); border-radius:8px; font-size:14px; font-family:var(--font-system);">
+              </div>
+              <div>
+                <label style="display:block; font-size:12px; color:var(--color-text-secondary); margin-bottom:6px;">漏斗阶段</label>
+                <select id="arch-funnel" style="width:100%; padding:9px 10px; border:1px solid var(--color-border); border-radius:8px; font-size:14px; background:var(--color-card); font-family:var(--font-system);">
+                  ${funnelOpts.map(o => `<option ${a.funnelStage === o ? 'selected' : ''}>${o}</option>`).join('')}
+                </select>
+              </div>
+            </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+              <div>
+                <label style="display:block; font-size:12px; color:var(--color-text-secondary); margin-bottom:6px;">目标人群</label>
+                <input type="text" id="arch-target" value="${a.targetAudience || ''}" placeholder="如：公域引流用户" style="width:100%; padding:9px 12px; border:1px solid var(--color-border); border-radius:8px; font-size:14px; font-family:var(--font-system);">
+              </div>
+              <div>
+                <label style="display:block; font-size:12px; color:var(--color-text-secondary); margin-bottom:6px;">状态</label>
+                <select id="arch-status" style="width:100%; padding:9px 12px; border:1px solid var(--color-border); border-radius:8px; font-size:14px; background:var(--color-card); font-family:var(--font-system);">
+                  ${statusOpts.map(o => `<option ${a.status === o ? 'selected' : ''}>${o}</option>`).join('')}
+                </select>
+              </div>
+            </div>
+            <div>
+              <label style="display:block; font-size:12px; color:var(--color-text-secondary); margin-bottom:6px;">版本号</label>
+              <input type="text" id="arch-version" value="${a.version || 'V1.0'}" placeholder="如：V1.0" style="width:100%; padding:9px 12px; border:1px solid var(--color-border); border-radius:8px; font-size:14px; font-family:var(--font-system);">
+            </div>
+            <div>
+              <label style="display:block; font-size:12px; color:var(--color-text-secondary); margin-bottom:6px;">SOP 内容（每行一步骤，支持换行）</label>
+              <textarea id="arch-sop" rows="6" placeholder="如：&#10;Day1: 开营仪式 + 自我介绍&#10;Day2: 产品科普 + 打卡&#10;Day3: 互动答疑 + 作业" style="width:100%; padding:9px 12px; border:1px solid var(--color-border); border-radius:8px; font-size:14px; font-family:var(--font-system); resize:vertical;">${a.sopText || ''}</textarea>
+            </div>
+            <div id="arch-error" style="color:var(--color-danger); font-size:12px; min-height:16px;"></div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="card-action-btn" onclick="App.hideModal()">取消</button>
+          <button class="card-action-btn primary" id="arch-submit">${isEdit ? '💾 保存' : '✓ 新增'}</button>
+        </div>
+      </div>
+    `;
+    modal.style.display = 'flex';
+
+    document.getElementById('arch-submit').addEventListener('click', () => {
+      const name = document.getElementById('arch-name').value.trim();
+      if (!name) {
+        document.getElementById('arch-error').textContent = '请填写架构名称';
+        return;
+      }
+      const data = {
+        id: isEdit ? arch.id : 'arch_' + Date.now(),
+        name,
+        type: document.getElementById('arch-type').value,
+        duration: document.getElementById('arch-duration').value.trim(),
+        funnelStage: document.getElementById('arch-funnel').value,
+        targetAudience: document.getElementById('arch-target').value.trim(),
+        status: document.getElementById('arch-status').value,
+        version: document.getElementById('arch-version').value.trim() || 'V1.0',
+        sopText: document.getElementById('arch-sop').value.trim(),
+        _custom: true
+      };
+
+      const allArch = this._loadCustomArchData();
+      if (isEdit) {
+        const idx = allArch.findIndex(a => a.id === arch.id);
+        if (idx >= 0) allArch[idx] = data;
+        else allArch.push(data);
+      } else {
+        allArch.push(data);
+      }
+      this._saveCustomArchData(allArch);
+
+      this.showToast(isEdit ? '✓ 已保存修改' : '✓ 已新增架构');
+      this.hideModal();
+      this.renderArchitecture();
+    });
+  },
+
+  /**
+   * 查看SOP详情
+   */
+  viewArchSop(archId) {
+    const allArch = this._loadCustomArchData();
+    const arch = allArch.find(a => a.id === archId);
+    if (!arch) { this.showToast('未找到该架构'); return; }
+
+    const sopSteps = (arch.sopText || '').split('\n').filter(Boolean);
+    const modal = document.getElementById('modal-overlay') || this._ensureModalOverlay();
+    modal.innerHTML = `
+      <div class="modal" style="max-width:520px; max-height:85vh; overflow-y:auto;">
+        <div class="modal-header">
+          <h3>📋 ${arch.name} - SOP</h3>
+          <button class="modal-close" onclick="App.hideModal()">×</button>
+        </div>
+        <div class="modal-body" style="padding:20px 24px;">
+          <div style="display:grid; grid-template-columns:repeat(2,1fr); gap:8px; margin-bottom:16px; padding:12px; background:var(--color-card-secondary); border-radius:8px; font-size:12.5px;">
+            <div>📦 类型: <strong>${arch.type}</strong></div>
+            <div>⏱ 时长: <strong>${arch.duration}</strong></div>
+            <div>👥 目标: <strong>${arch.targetAudience}</strong></div>
+            <div>🔄 漏斗: <strong>${arch.funnelStage}</strong></div>
+            <div>📋 版本: <strong>${arch.version}</strong></div>
+            <div>📊 状态: <strong>${arch.status}</strong></div>
+          </div>
+          <div style="font-size:13px; font-weight:600; margin-bottom:8px;">SOP 步骤</div>
+          ${sopSteps.length > 0 ? `
+            <div style="display:flex; flex-direction:column; gap:8px;">
+              ${sopSteps.map((s, i) => `
+                <div style="display:flex; gap:10px; padding:8px 12px; background:var(--color-card); border:1px solid var(--color-border); border-radius:8px;">
+                  <span style="display:inline-flex; align-items:center; justify-content:center; width:24px; height:24px; background:var(--color-accent-soft); color:var(--color-accent); border-radius:50%; font-size:12px; font-weight:700; flex-shrink:0;">${i + 1}</span>
+                  <span style="font-size:13px; line-height:1.5;">${s}</span>
+                </div>
+              `).join('')}
+            </div>
+          ` : `
+            <div style="text-align:center; padding:24px; color:var(--color-text-tertiary); font-size:13px;">
+              暂无 SOP 内容<br>
+              <small>点击"✏️ 编辑"添加 SOP 步骤</small>
+            </div>
+          `}
+        </div>
+        <div class="modal-footer">
+          <button class="card-action-btn" onclick="App.copyArchSop('${arch.id}')">📋 复制SOP</button>
+          <button class="card-action-btn primary" onclick="App.openArchModal('${arch.id}')">✏️ 编辑</button>
+        </div>
+      </div>
+    `;
+    modal.style.display = 'flex';
+  },
+
+  /**
+   * 复制架构数据为 JSON
+   */
+  copyArchData(archId) {
+    const allArch = this._loadCustomArchData();
+    const arch = allArch.find(a => a.id === archId);
+    if (!arch) { this.showToast('未找到该架构'); return; }
+    const text = `【${arch.name}】\n类型：${arch.type} | 时长：${arch.duration} | 漏斗：${arch.funnelStage}\n目标：${arch.targetAudience} | 版本：${arch.version} | 状态：${arch.status}\n\nSOP：\n${arch.sopText || '（待编辑）'}`;
+    this.copyToClipboard(text);
+  },
+
+  /**
+   * 复制 SOP 步骤文本
+   */
+  copyArchSop(archId) {
+    const allArch = this._loadCustomArchData();
+    const arch = allArch.find(a => a.id === archId);
+    if (!arch) { this.showToast('未找到该架构'); return; }
+    this.copyToClipboard(arch.sopText || '');
+    this.hideModal();
+  },
+
+  /**
+   * 删除架构
+   */
+  deleteArch(archId) {
+    const allArch = this._loadCustomArchData();
+    const arch = allArch.find(a => a.id === archId);
+    if (!arch) { this.showToast('未找到该架构'); return; }
+    if (!confirm(`确认删除"${arch.name}"？此操作不可撤销。`)) return;
+
+    const idx = allArch.findIndex(a => a.id === archId);
+    if (idx >= 0) allArch.splice(idx, 1);
+
+    // 从 localStorage 移除
+    try {
+      const saved = localStorage.getItem('melbeacon_custom_arch');
+      const custom = saved ? JSON.parse(saved) : [];
+      const cIdx = custom.findIndex(c => c.id === archId);
+      if (cIdx >= 0) {
+        custom.splice(cIdx, 1);
+        localStorage.setItem('melbeacon_custom_arch', JSON.stringify(custom));
+      }
+    } catch (e) {}
+
+    this.showToast('✓ 已删除');
+    this.renderArchitecture();
   },
 
   /* ========== 课件制作标签页 ========== */
