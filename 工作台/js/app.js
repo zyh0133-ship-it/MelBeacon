@@ -4593,7 +4593,7 @@ const App = {
                   <td><span class="status-badge ${statusMap[e.status].class}">${statusMap[e.status].text}</span></td>
                   <td>
                     <button class="card-action-btn" onclick="App.showToast('查看考核详情')">详情</button>
-                    ${e.status === 'upcoming' ? `<button class="card-action-btn primary" onclick="App.showToast('已复制试卷生成提示词')">出试卷</button>` : ''}
+                    ${e.status === 'upcoming' ? `<button class="card-action-btn primary" onclick="App.openExamGeneratorModal('${e.id}')">出试卷</button>` : ''}
                   </td>
                 </tr>
               `).join('')}
@@ -7561,6 +7561,136 @@ const App = {
     } else {
       this.showToast('任务不存在', 'error');
     }
+  },
+
+  /**
+   * 任务8：打开试卷生成模态框
+   */
+  openExamGeneratorModal(examId) {
+    // 从 examData 中查找考核信息
+    const exam = examData.find(e => e.id === examId);
+    if (!exam) { this.showToast('未找到该考核'); return; }
+
+    const modal = document.getElementById('modal-overlay') || this._ensureModalOverlay();
+    modal.innerHTML = `
+      <div class="modal" style="max-width:640px; max-height:90vh; overflow-y:auto;">
+        <div class="modal-header">
+          <h3>📝 生成试卷：${exam.title}</h3>
+          <button class="modal-close" onclick="App.hideModal()">×</button>
+        </div>
+        <div class="modal-body" style="padding:20px 24px;">
+          <div style="background:var(--color-card-secondary); border-radius:8px; padding:12px; margin-bottom:16px; font-size:12.5px;">
+            <div>📚 级别: <strong>${exam.level}</strong></div>
+            <div>📋 题数要求: <strong>${exam.totalQuestions}题</strong></div>
+            <div>✅ 及格分: <strong>${exam.passingScore}分</strong></div>
+          </div>
+          <div style="margin-bottom:16px;">
+            <label style="display:block; font-size:12px; color:var(--color-text-secondary); margin-bottom:8px;">选择题型分布</label>
+            <div style="display:grid; grid-template-columns:repeat(2,1fr); gap:10px;">
+              <div><label><input type="checkbox" id="eg-single" checked> 单选题</label></div>
+              <div><label><input type="checkbox" id="eg-multi" checked> 多选题</label></div>
+              <div><label><input type="checkbox" id="eg-judge" checked> 判断题</label></div>
+              <div><label><input type="checkbox" id="eg-short"> 简答题</label></div>
+            </div>
+          </div>
+          <div style="margin-bottom:16px;">
+            <label style="display:block; font-size:12px; color:var(--color-text-secondary); margin-bottom:6px;">考核范围/知识点（可选）</label>
+            <textarea id="eg-topics" rows="3" placeholder="如：产品知识、营养学基础、销售技巧、公司制度" style="width:100%; padding:9px 12px; border:1px solid var(--color-border); border-radius:8px; font-size:14px; font-family:var(--font-system); resize:vertical;"></textarea>
+          </div>
+          <div id="eg-result" style="display:none;"></div>
+        </div>
+        <div class="modal-footer">
+          <button class="card-action-btn" onclick="App.hideModal()">取消</button>
+          <button class="card-action-btn primary" id="eg-generate">🤖 AI生成试卷</button>
+        </div>
+      </div>
+    `;
+    modal.style.display = 'flex';
+
+    // 生成按钮事件
+    document.getElementById('eg-generate').addEventListener('click', () => {
+      this._generateExamPaperContent(exam);
+    });
+  },
+
+  /**
+   * 生成试卷内容（模拟 AI 生成）
+   */
+  _generateExamPaperContent(exam) {
+    const includeSingle = document.getElementById('eg-single').checked;
+    const includeMulti = document.getElementById('eg-multi').checked;
+    const includeJudge = document.getElementById('eg-judge').checked;
+    const includeShort = document.getElementById('eg-short').checked;
+    const topics = document.getElementById('eg-topics').value.trim() || '产品知识、营养学基础、销售技巧';
+    
+    // 模拟生成试卷内容
+    let questions = [];
+    let qNum = 1;
+    
+    if (includeSingle) {
+      questions.push(`${qNum}. 【单选】以下哪个不是美乐家的核心产品线？
+A. 营养补充品 B. 护肤品 C. 家电产品 D. 清洁用品
+答案: C
+解析: 美乐家主要产品线为营养补充品、护肤品、清洁用品等，不涉及家电。`);
+      qNum++;
+      questions.push(`${qNum}. 【单选】美乐家创立于哪一年？
+A. 1985年 B. 1990年 C. 1995年 D. 2000年
+答案: A
+解析: 美乐家（Melaleuca）创立于1985年。`);
+      qNum++;
+    }
+    
+    if (includeMulti) {
+      questions.push(`${qNum}. 【多选】以下哪些是成为D3推广商的必要条件？
+A. 完成L1培训 B. 通过考核 C. 推荐3名会员 D. 达成月度业绩
+答案: AB
+解析: D3推广商需要完成培训并通过考核，推荐会员和业绩是晋升指标。`);
+      qNum++;
+    }
+    
+    if (includeJudge) {
+      questions.push(`${qNum}. 【判断】美乐家产品均为纯天然成分。
+答案: 错误
+解析: 美乐家产品追求天然成分，但"均为"表述过于绝对。`);
+      qNum++;
+    }
+    
+    if (includeShort) {
+      questions.push(`${qNum}. 【简答】请简述美乐家的核心价值观。
+参考答案: 美乐家秉承"助人达成目标，共创美好未来"的理念，致力于提供优质产品、保护环境、帮助家庭实现财务自由。`);
+      qNum++;
+    }
+
+    // 补充到目标题数
+    while (questions.length < exam.totalQuestions) {
+      questions.push(`${questions.length + 1}. 【单选】第${questions.length + 1}题（自动生成）
+A. 选项A B. 选项B C. 选项C D. 选项D
+答案: A
+解析: 自动生成的题目。`);
+    }
+
+    const paperText = `【${exam.title}试卷】
+级别: ${exam.level} | 满分: 100分 | 及格: ${exam.passingScore}分
+考核范围: ${topics}
+
+${questions.join('\n\n')}
+
+--- 试卷生成完毕 ---`;
+
+    // 显示结果
+    const resultDiv = document.getElementById('eg-result');
+    resultDiv.style.display = 'block';
+    resultDiv.innerHTML = `
+      <div style="background:var(--color-card); border:1px solid var(--color-border); border-radius:8px; padding:14px; margin-bottom:12px; max-height:300px; overflow-y:auto; white-space:pre-wrap; font-size:12.5px; line-height:1.6;">${paperText}</div>
+      <div style="display:flex; gap:10px;">
+        <button class="card-action-btn" onclick="App.copyToClipboard(\`${paperText.replace(/`/g, '\\`')}\`)">📋 复制试卷</button>
+        <button class="card-action-btn" onclick="App.showToast('试卷已保存')">💾 保存到考核</button>
+      </div>
+    `;
+    
+    // 更新生成按钮
+    const genBtn = document.getElementById('eg-generate');
+    genBtn.textContent = '🔄 重新生成';
   }
 };
 
