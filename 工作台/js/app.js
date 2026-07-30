@@ -1474,6 +1474,7 @@ const App = {
     const manualCount = todayTasks.filter(t => t.operator === '手动推送').length;
 
     container.innerHTML = `
+      <div class="resp-section">
       <!-- V3.0 第三阶段：当日指标展示卡片 -->
       <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px;">
         <div style="background: linear-gradient(135deg, var(--color-primary) 0%, #1a4d2e 100%); color: white; padding: 14px 16px; border-radius: 10px;">
@@ -1512,7 +1513,7 @@ const App = {
         </div>
       ` : ''}
 
-      <div class="calendar-header">
+      <div class="calendar-header" style="padding: 12px 0;">
         <button class="calendar-nav-btn" onclick="App.changeCalendarDate(-1)">←</button>
         <div class="calendar-dates">
           ${dates.map(d => {
@@ -1532,7 +1533,8 @@ const App = {
         </div>
         <button class="calendar-nav-btn" onclick="App.changeCalendarDate(1)">→</button>
       </div>
-      <div class="push-timeline" id="push-timeline-content"></div>
+      <div class="push-timeline" id="push-timeline-content" style="padding: 0;"></div>
+      </div>
     `;
 
     this.renderPushTimeline();
