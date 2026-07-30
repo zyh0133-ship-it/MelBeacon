@@ -6077,11 +6077,25 @@ const App = {
     }
   },
 
-  renderTasksToday() {
-    const container = document.getElementById('tasks-today');
-    if (!container) return;
+  /* ========== 任务7：任务计划 CRUD ========== */
 
-    const todayTasks = [
+  _loadCustomTasks() {
+    try {
+      const saved = localStorage.getItem('melbeacon_custom_tasks');
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) { return []; }
+  },
+
+  _saveCustomTasks(tasks) {
+    try {
+      localStorage.setItem('melbeacon_custom_tasks', JSON.stringify(tasks));
+    } catch (e) {
+      this.showToast('保存失败：localStorage 不可用');
+    }
+  },
+
+  _getAllTasks(type = 'today') {
+    const baseToday = [
       { id: 'tk_01', title: '推送营养训练营Day15内容到飞书群', priority: '高', module: '社群运营', status: 'pending', deadline: '08:00' },
       { id: 'tk_02', title: '小红书发布今日文案（绿茶片话题）', priority: '高', module: '自媒体运营', status: 'pending', deadline: '10:00' },
       { id: 'tk_03', title: '回复社群成员打卡消息', priority: '中', module: '社群运营', status: 'in_progress', deadline: '全天' },
@@ -6095,7 +6109,42 @@ const App = {
       { id: 'tk_11', title: '跟进宋玲林晋升进度', priority: '中', module: '经营者培训', status: 'pending', deadline: '17:00' },
       { id: 'tk_12', title: '飞书自动化任务检查', priority: '低', module: '运营中枢', status: 'completed', deadline: '已完成' }
     ];
+    const baseWeek = [
+      { id: 'wk_01', title: '完成8月第1周自媒体内容排期', module: '自媒体运营', deadline: '08-04', status: 'in_progress', assignee: '博主A' },
+      { id: 'wk_02', title: '精油沙龙活动执行+复盘', module: '线下活动', deadline: '08-04', status: 'pending', assignee: '芳疗师A' },
+      { id: 'wk_03', title: '营养训练营Day15-21内容准备', module: '课件制作', deadline: '08-05', status: 'pending', assignee: '营养师L' },
+      { id: 'wk_04', title: '会员月度消费跟进报告', module: '社群运营', deadline: '08-05', status: 'pending', assignee: '社群专员' },
+      { id: 'wk_05', title: '经营者培训考核（8月批次）', module: '经营者培训', deadline: '08-05', status: 'pending', assignee: '周老师' },
+      { id: 'wk_06', title: '护肤体验课策划与执行', module: '线下活动', deadline: '08-06', status: 'pending', assignee: '小雅' },
+      { id: 'wk_07', title: '周度数据复盘+优化方案', module: '运营中枢', deadline: '08-06', status: 'pending', assignee: '管理员' },
+      { id: 'wk_08', title: '飞书群推送日历更新', module: '社群运营', deadline: '08-07', status: 'pending', assignee: '社群专员' },
+      { id: 'wk_09', title: '短视频脚本批量生产', module: '课件制作', deadline: '08-07', status: 'in_progress', assignee: '博主A' },
+      { id: 'wk_10', title: '团队建设活动复盘', module: '经营者培训', deadline: '08-07', status: 'pending', assignee: '李老师' },
+      { id: 'wk_11', title: '对标账号月度分析报告', module: '自媒体运营', deadline: '08-08', status: 'pending', assignee: '博主A' },
+      { id: 'wk_12', title: '合规审查（月度）', module: '运营中枢', deadline: '08-08', status: 'pending', assignee: '管理员' },
+      { id: 'wk_13', title: '体验馆月度开放日筹备', module: '线下活动', deadline: '08-09', status: 'pending', assignee: '体验馆' },
+      { id: 'wk_14', title: '8月第2周内容排期', module: '自媒体运营', deadline: '08-09', status: 'pending', assignee: '博主A' },
+      { id: 'wk_15', title: '社区公益讲座执行', module: '线下活动', deadline: '08-10', status: 'pending', assignee: '待定' }
+    ];
 
+    const custom = this._loadCustomTasks();
+    const base = type === 'today' ? baseToday : baseWeek;
+    const merged = [...base];
+    custom.forEach(c => {
+      if ((type === 'today' && c.id.startsWith('tk_')) || (type === 'week' && c.id.startsWith('wk_'))) {
+        const idx = merged.findIndex(m => m.id === c.id);
+        if (idx >= 0) merged[idx] = c;
+        else merged.push(c);
+      }
+    });
+    return merged;
+  },
+
+  renderTasksToday() {
+    const container = document.getElementById('tasks-today');
+    if (!container) return;
+
+    const todayTasks = this._getAllTasks('today');
     const statusMap = {
       pending: { text: '待处理', class: 'pending' },
       in_progress: { text: '进行中', class: 'in_progress' },
@@ -6105,6 +6154,10 @@ const App = {
 
     container.innerHTML = `
       <div class="resp-section">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+          <div style="font-size:13px; color:var(--color-text-secondary);">共 ${todayTasks.length} 条任务</div>
+          <button class="card-action-btn primary" onclick="App.openTaskModal('today')" style="background:var(--color-accent); border-color:var(--color-accent); color:var(--color-primary); font-weight:600;">➕ 新建任务</button>
+        </div>
         <div class="task-stats-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 12px; margin-bottom: 16px;">
           <div style="padding: 12px; background: var(--color-card); border-radius: 8px; border-left: 3px solid var(--color-accent);">
             <div style="font-size: 24px; font-weight: 700; color: var(--color-primary);">${todayTasks.length}</div>
@@ -6137,8 +6190,9 @@ const App = {
                   <td><span class="card-tag">#${t.module}</span></td>
                   <td>${t.deadline}</td>
                   <td>
-                    ${t.status !== 'completed' ? `<button class="card-action-btn primary" onclick="App.showToast('已标记完成')">完成</button>` : ''}
-                    <button class="card-action-btn" onclick="App.showToast('查看任务详情')">详情</button>
+                    ${t.status !== 'completed' ? `<button class="card-action-btn primary" onclick="App.completeTask('${t.id}')">完成</button>` : ''}
+                    <button class="card-action-btn" onclick="App.openTaskModal('today', '${t.id}')">详情</button>
+                    <button class="card-action-btn" onclick="App.deleteTask('${t.id}')" style="color:var(--color-danger);">🗑 删除</button>
                   </td>
                 </tr>
               `).join('')}
@@ -6153,24 +6207,7 @@ const App = {
     const container = document.getElementById('tasks-week');
     if (!container) return;
 
-    const weekTasks = [
-      { id: 'wk_01', title: '完成8月第1周自媒体内容排期', module: '自媒体运营', deadline: '08-04', status: 'in_progress', assignee: '博主A' },
-      { id: 'wk_02', title: '精油沙龙活动执行+复盘', module: '线下活动', deadline: '08-04', status: 'pending', assignee: '芳疗师A' },
-      { id: 'wk_03', title: '营养训练营Day15-21内容准备', module: '课件制作', deadline: '08-05', status: 'pending', assignee: '营养师L' },
-      { id: 'wk_04', title: '会员月度消费跟进报告', module: '社群运营', deadline: '08-05', status: 'pending', assignee: '社群专员' },
-      { id: 'wk_05', title: '经营者培训考核（8月批次）', module: '经营者培训', deadline: '08-05', status: 'pending', assignee: '周老师' },
-      { id: 'wk_06', title: '护肤体验课策划与执行', module: '线下活动', deadline: '08-06', status: 'pending', assignee: '小雅' },
-      { id: 'wk_07', title: '周度数据复盘+优化方案', module: '运营中枢', deadline: '08-06', status: 'pending', assignee: '管理员' },
-      { id: 'wk_08', title: '飞书群推送日历更新', module: '社群运营', deadline: '08-07', status: 'pending', assignee: '社群专员' },
-      { id: 'wk_09', title: '短视频脚本批量生产', module: '课件制作', deadline: '08-07', status: 'in_progress', assignee: '博主A' },
-      { id: 'wk_10', title: '团队建设活动复盘', module: '经营者培训', deadline: '08-07', status: 'pending', assignee: '李老师' },
-      { id: 'wk_11', title: '对标账号月度分析报告', module: '自媒体运营', deadline: '08-08', status: 'pending', assignee: '博主A' },
-      { id: 'wk_12', title: '合规审查（月度）', module: '运营中枢', deadline: '08-08', status: 'pending', assignee: '管理员' },
-      { id: 'wk_13', title: '体验馆月度开放日筹备', module: '线下活动', deadline: '08-09', status: 'pending', assignee: '体验馆' },
-      { id: 'wk_14', title: '8月第2周内容排期', module: '自媒体运营', deadline: '08-09', status: 'pending', assignee: '博主A' },
-      { id: 'wk_15', title: '社区公益讲座执行', module: '线下活动', deadline: '08-10', status: 'pending', assignee: '待定' }
-    ];
-
+    const weekTasks = this._getAllTasks('week');
     const statusMap = {
       pending: { text: '待处理', class: 'pending' },
       in_progress: { text: '进行中', class: 'in_progress' },
@@ -6179,6 +6216,10 @@ const App = {
 
     container.innerHTML = `
       <div class="resp-section">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+          <div style="font-size:13px; color:var(--color-text-secondary);">共 ${weekTasks.length} 条任务</div>
+          <button class="card-action-btn primary" onclick="App.openTaskModal('week')" style="background:var(--color-accent); border-color:var(--color-accent); color:var(--color-primary); font-weight:600;">➕ 新建任务</button>
+        </div>
         <div class="table-scroll-wrap">
           <table class="follow-table">
             <thead>
@@ -6191,10 +6232,11 @@ const App = {
                   <td><strong>${t.title}</strong></td>
                   <td><span class="card-tag">#${t.module}</span></td>
                   <td>${t.deadline}</td>
-                  <td>${t.assignee}</td>
+                  <td>${t.assignee || '-'}</td>
                   <td>
-                    <button class="card-action-btn" onclick="App.showToast('查看任务详情')">详情</button>
-                    <button class="card-action-btn" onclick="App.showToast('已复制任务提示词')">AI辅助</button>
+                    ${t.status !== 'completed' ? `<button class="card-action-btn primary" onclick="App.completeTask('${t.id}')">完成</button>` : ''}
+                    <button class="card-action-btn" onclick="App.openTaskModal('week', '${t.id}')">详情</button>
+                    <button class="card-action-btn" onclick="App.deleteTask('${t.id}')" style="color:var(--color-danger);">🗑 删除</button>
                   </td>
                 </tr>
               `).join('')}
@@ -7355,6 +7397,169 @@ const App = {
       return (d.getMonth() + 1) + '/' + d.getDate() + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
     } catch (e) {
       return '刚刚';
+    }
+  },
+
+  /* ========== 任务管理：打开任务模态框 ========== */
+  openTaskModal(type, taskId = null) {
+    const isEdit = !!taskId;
+    const customTasks = this._loadCustomTasks();
+    const existingTask = isEdit ? customTasks.find(t => t.id === taskId) : null;
+
+    // 根据类型定义不同的表单字段
+    const isToday = type === 'today';
+    const modalTitle = isEdit ? '编辑任务' : '新建任务';
+
+    // 生成唯一的任务ID
+    const generateId = () => type + '_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+
+    const modalHtml = `
+      <div id="task-modal-overlay" class="modal-overlay" onclick="App._closeTaskModal(event)" style="position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:10000; display:flex; align-items:center; justify-content:center;">
+        <div class="modal-content" onclick="event.stopPropagation()" style="background:var(--color-card); border-radius:12px; padding:24px; width:90%; max-width:480px; max-height:90vh; overflow-y:auto; box-shadow:0 8px 32px rgba(0,0,0,0.3);">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+            <h3 style="margin:0; font-size:18px; color:var(--color-primary);">${modalTitle}</h3>
+            <button onclick="App._closeTaskModal()" style="background:none; border:none; font-size:24px; cursor:pointer; color:var(--color-text-secondary);">×</button>
+          </div>
+          <form id="task-form" onsubmit="App._submitTaskForm(event, '${type}', '${taskId || ''}')">
+            <div style="margin-bottom:16px;">
+              <label style="display:block; margin-bottom:6px; font-size:13px; color:var(--color-text-secondary);">任务标题 *</label>
+              <input type="text" name="title" value="${existingTask?.title || ''}" required style="width:100%; padding:10px 12px; border:1px solid var(--color-border); border-radius:6px; background:var(--color-bg); color:var(--color-primary); font-size:14px; box-sizing:border-box;" placeholder="请输入任务标题">
+            </div>
+            ${isToday ? `
+              <div style="margin-bottom:16px;">
+                <label style="display:block; margin-bottom:6px; font-size:13px; color:var(--color-text-secondary);">优先级</label>
+                <select name="priority" style="width:100%; padding:10px 12px; border:1px solid var(--color-border); border-radius:6px; background:var(--color-bg); color:var(--color-primary); font-size:14px; box-sizing:border-box;">
+                  <option value="高" ${existingTask?.priority === '高' ? 'selected' : ''}>高</option>
+                  <option value="中" ${existingTask?.priority === '中' ? 'selected' : ''}>中</option>
+                  <option value="低" ${existingTask?.priority === '低' ? 'selected' : ''}>低</option>
+                </select>
+              </div>
+            ` : ''}
+            <div style="margin-bottom:16px;">
+              <label style="display:block; margin-bottom:6px; font-size:13px; color:var(--color-text-secondary);">模块</label>
+              <input type="text" name="module" value="${existingTask?.module || ''}" style="width:100%; padding:10px 12px; border:1px solid var(--color-border); border-radius:6px; background:var(--color-bg); color:var(--color-primary); font-size:14px; box-sizing:border-box;" placeholder="如：自媒体运营、社群运营等">
+            </div>
+            <div style="margin-bottom:16px;">
+              <label style="display:block; margin-bottom:6px; font-size:13px; color:var(--color-text-secondary);">状态</label>
+              <select name="status" style="width:100%; padding:10px 12px; border:1px solid var(--color-border); border-radius:6px; background:var(--color-bg); color:var(--color-primary); font-size:14px; box-sizing:border-box;">
+                <option value="pending" ${existingTask?.status === 'pending' ? 'selected' : ''}>待处理</option>
+                <option value="in_progress" ${existingTask?.status === 'in_progress' ? 'selected' : ''}>进行中</option>
+                <option value="completed" ${existingTask?.status === 'completed' ? 'selected' : ''}>已完成</option>
+              </select>
+            </div>
+            <div style="margin-bottom:16px;">
+              <label style="display:block; margin-bottom:6px; font-size:13px; color:var(--color-text-secondary);">${isToday ? '截止时间' : '截止日期'}</label>
+              <input type="${isToday ? 'time' : 'date'}" name="deadline" value="${existingTask?.deadline || ''}" style="width:100%; padding:10px 12px; border:1px solid var(--color-border); border-radius:6px; background:var(--color-bg); color:var(--color-primary); font-size:14px; box-sizing:border-box;">
+            </div>
+            ${!isToday ? `
+              <div style="margin-bottom:20px;">
+                <label style="display:block; margin-bottom:6px; font-size:13px; color:var(--color-text-secondary);">负责人</label>
+                <input type="text" name="assignee" value="${existingTask?.assignee || ''}" style="width:100%; padding:10px 12px; border:1px solid var(--color-border); border-radius:6px; background:var(--color-bg); color:var(--color-primary); font-size:14px; box-sizing:border-box;" placeholder="负责人姓名">
+              </div>
+            ` : ''}
+            <div style="display:flex; gap:12px; justify-content:flex-end;">
+              <button type="button" onclick="App._closeTaskModal()" style="padding:10px 20px; border:1px solid var(--color-border); border-radius:6px; background:var(--color-bg); color:var(--color-text-secondary); font-size:14px; cursor:pointer;">取消</button>
+              <button type="submit" style="padding:10px 20px; border:none; border-radius:6px; background:var(--color-accent); color:var(--color-primary); font-size:14px; cursor:pointer; font-weight:600;">保存</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    `;
+
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+  },
+
+  /* ========== 任务管理：关闭任务模态框 ========== */
+  _closeTaskModal(event) {
+    if (event && event.target !== event.currentTarget) return;
+    const overlay = document.getElementById('task-modal-overlay');
+    if (overlay) overlay.remove();
+  },
+
+  /* ========== 任务管理：提交任务表单 ========== */
+  _submitTaskForm(event, type, taskId) {
+    event.preventDefault();
+    const form = event.target;
+    const formData = new FormData(form);
+
+    const customTasks = this._loadCustomTasks();
+
+    const taskData = {
+      id: taskId || (type + '_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9)),
+      title: formData.get('title'),
+      module: formData.get('module') || '运营中枢',
+      status: formData.get('status'),
+      deadline: formData.get('deadline') || '',
+      createdAt: new Date().toISOString()
+    };
+
+    // 今日任务特有字段
+    if (type === 'today') {
+      taskData.priority = formData.get('priority') || '中';
+    } else {
+      // 本周任务特有字段
+      taskData.assignee = formData.get('assignee') || '';
+      taskData.priority = '中';
+    }
+
+    // 查找是否已存在该任务（编辑模式）
+    const existingIndex = customTasks.findIndex(t => t.id === taskId);
+    if (existingIndex >= 0) {
+      // 编辑模式：保留原创建时间
+      taskData.createdAt = customTasks[existingIndex].createdAt;
+      customTasks[existingIndex] = taskData;
+    } else {
+      // 新建模式
+      customTasks.push(taskData);
+    }
+
+    // 保存到 localStorage
+    localStorage.setItem('melbeacon_custom_tasks', JSON.stringify(customTasks));
+
+    // 关闭模态框
+    this._closeTaskModal();
+
+    // 刷新任务列表
+    if (type === 'today') {
+      this.renderTasksToday();
+    } else {
+      this.renderTasksWeek();
+    }
+
+    this.showToast(taskId ? '任务已更新' : '任务已创建');
+  },
+
+  /* ========== 任务管理：完成任务 ========== */
+  completeTask(taskId) {
+    const customTasks = this._loadCustomTasks();
+    const task = customTasks.find(t => t.id === taskId);
+
+    if (task) {
+      task.status = 'completed';
+      localStorage.setItem('melbeacon_custom_tasks', JSON.stringify(customTasks));
+      this.renderTasksToday();
+      this.renderTasksWeek();
+      this.showToast('任务已标记完成');
+    } else {
+      this.showToast('任务不存在', 'error');
+    }
+  },
+
+  /* ========== 任务管理：删除任务 ========== */
+  deleteTask(taskId) {
+    if (!confirm('确定要删除这个任务吗？')) return;
+
+    const customTasks = this._loadCustomTasks();
+    const index = customTasks.findIndex(t => t.id === taskId);
+
+    if (index >= 0) {
+      customTasks.splice(index, 1);
+      localStorage.setItem('melbeacon_custom_tasks', JSON.stringify(customTasks));
+      this.renderTasksToday();
+      this.renderTasksWeek();
+      this.showToast('任务已删除');
+    } else {
+      this.showToast('任务不存在', 'error');
     }
   }
 };
