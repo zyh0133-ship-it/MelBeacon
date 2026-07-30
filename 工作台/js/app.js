@@ -5484,7 +5484,7 @@ const App = {
                   <td>
                     <button class="card-action-btn primary" onclick="App.showToast('查看课程详情')">详情</button>
                     <button class="card-action-btn" onclick="App.showToast('已复制课程大纲')">大纲</button>
-                    <button class="card-action-btn" onclick="App.showToast('已复制报名链接')">报名</button>
+                    <button class="card-action-btn" onclick="App.openEnrollModal('${t.id}')">报名</button>
                   </td>
                 </tr>
               `).join('')}
@@ -7691,6 +7691,81 @@ ${questions.join('\n\n')}
     // 更新生成按钮
     const genBtn = document.getElementById('eg-generate');
     genBtn.textContent = '🔄 重新生成';
+  },
+
+  /**
+   * 任务9：打开培训报名模态框
+   */
+  openEnrollModal(courseId) {
+    // 从 trainingCalendarData 中查找课程信息
+    const course = (typeof trainingCalendarData !== 'undefined') ? trainingCalendarData.find(c => c.id === courseId) : null;
+    if (!course) { this.showToast('未找到该课程'); return; }
+
+    const modal = document.getElementById('modal-overlay') || this._ensureModalOverlay();
+    modal.innerHTML = `
+      <div class="modal" style="max-width:480px; max-height:85vh; overflow-y:auto;">
+        <div class="modal-header">
+          <h3>📝 报名：${course.title}</h3>
+          <button class="modal-close" onclick="App.hideModal()">×</button>
+        </div>
+        <div class="modal-body" style="padding:20px 24px;">
+          <div style="background:var(--color-card-secondary); border-radius:8px; padding:12px; margin-bottom:16px; font-size:12.5px;">
+            <div>📚 级别: <strong>${course.level}</strong></div>
+            <div>📅 日期: <strong>${course.date}</strong></div>
+            <div>⏰ 时间: <strong>${course.time}</strong></div>
+            <div>📍 地点: <strong>${course.location}</strong></div>
+          </div>
+          <div style="margin-bottom:16px;">
+            <label style="display:block; font-size:12px; color:var(--color-text-secondary); margin-bottom:6px;">您的姓名</label>
+            <input type="text" id="enroll-name" placeholder="请输入姓名" style="width:100%; padding:9px 12px; border:1px solid var(--color-border); border-radius:8px; font-size:14px; font-family:var(--font-system);">
+          </div>
+          <div style="margin-bottom:16px;">
+            <label style="display:block; font-size:12px; color:var(--color-text-secondary); margin-bottom:6px;">联系电话</label>
+            <input type="tel" id="enroll-phone" placeholder="请输入手机号" style="width:100%; padding:9px 12px; border:1px solid var(--color-border); border-radius:8px; font-size:14px; font-family:var(--font-system);">
+          </div>
+          <div style="margin-bottom:16px;">
+            <label style="display:block; font-size:12px; color:var(--color-text-secondary); margin-bottom:6px;">备注（可选）</label>
+            <textarea id="enroll-note" rows="2" placeholder="如有特殊需求请备注" style="width:100%; padding:9px 12px; border:1px solid var(--color-border); border-radius:8px; font-size:14px; font-family:var(--font-system); resize:vertical;"></textarea>
+          </div>
+          <div id="enroll-error" style="color:var(--color-danger); font-size:12px; min-height:16px;"></div>
+        </div>
+        <div class="modal-footer">
+          <button class="card-action-btn" onclick="App.hideModal()">取消</button>
+          <button class="card-action-btn primary" id="enroll-submit">✓ 确认报名</button>
+        </div>
+      </div>
+    `;
+    modal.style.display = 'flex';
+
+    // 提交报名
+    document.getElementById('enroll-submit').addEventListener('click', () => {
+      const name = document.getElementById('enroll-name').value.trim();
+      const phone = document.getElementById('enroll-phone').value.trim();
+
+      if (!name) {
+        document.getElementById('enroll-error').textContent = '请填写姓名';
+        return;
+      }
+      if (!phone || !/^1[3-9]\d{9}$/.test(phone)) {
+        document.getElementById('enroll-error').textContent = '请填写正确的手机号';
+        return;
+      }
+
+      // 保存报名记录到 localStorage
+      const enrollments = JSON.parse(localStorage.getItem('melbeacon_enrollments') || '[]');
+      enrollments.push({
+        courseId,
+        courseTitle: course.title,
+        name,
+        phone,
+        note: document.getElementById('enroll-note').value.trim(),
+        enrolledAt: new Date().toISOString()
+      });
+      localStorage.setItem('melbeacon_enrollments', JSON.stringify(enrollments));
+
+      this.showToast(`✓ 已成功报名"${course.title}"`);
+      this.hideModal();
+    });
   }
 };
 
